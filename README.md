@@ -53,6 +53,8 @@ A proposta principal é simples:
   - Obsidian
   - Postman
   - Discord
+  - Ferdium (multi-conta para mensageria)
+  - SSH Pilot (GUI para múltiplas conexões SSH)
   - Spotify
   - Audiotube (YouTube Music)
   - Celluloid (vídeo)
@@ -188,6 +190,8 @@ projects_repos:
 flatpak_apps:
   - id: "md.obsidian.Obsidian"
   - id: "com.getpostman.Postman"
+  - id: "org.ferdium.Ferdium"
+  - id: "io.github.mfat.sshpilot"
   - id: "com.spotify.Client"
   - id: "org.kde.audiotube"
 ```

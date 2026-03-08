@@ -74,6 +74,10 @@ flatpak_apps:
       apt_key_dest: "/etc/apt/keyrings/spotify.gpg"
       apt_repo: "deb [signed-by=/etc/apt/keyrings/spotify.gpg] http://repository.spotify.com stable non-free"
       apt_package: "spotify-client"
+  - id: "org.ferdium.Ferdium"
+    fallback:
+      apt: "ferdium"
+  - id: "io.github.mfat.sshpilot"
   - id: "org.kde.audiotube"
 chezmoi_repo: "https://github.com/SEU_REPO_DOTFILES"
 apt_cache_valid_time: 3600
