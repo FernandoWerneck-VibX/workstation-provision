@@ -172,6 +172,111 @@
         else ansible_architecture
       }}
 
+- name: Definir arquitetura do atuin
+  set_fact:
+    atuin_release_arch: >-
+      {{
+        'x86_64-unknown-linux-gnu' if ansible_architecture == 'x86_64'
+        else 'aarch64-unknown-linux-gnu' if ansible_architecture in ['aarch64', 'arm64']
+        else ''
+      }}
+
+- name: Falhar se arquitetura do atuin nao for suportada
+  fail:
+    msg: "Arquitetura {{ ansible_architecture }} nao suportada para instalacao automatica do atuin."
+  when: atuin_release_arch == ''
+
+- name: Consultar release mais recente do atuin
+  uri:
+    url: https://api.github.com/repos/atuinsh/atuin/releases/latest
+    return_content: yes
+    headers:
+      User-Agent: ansible
+  register: atuin_latest
+  failed_when: false
+  changed_when: false
+
+- name: Falhar se nao conseguir consultar release do atuin
+  fail:
+    msg: "Falha ao consultar release do atuin no GitHub. Verifique rede/proxy."
+  when: atuin_latest.status is not defined or atuin_latest.status != 200
+
+- name: Definir release do atuin
+  set_fact:
+    atuin_version: "{{ atuin_latest.json.tag_name | regex_replace('^v', '') }}"
+    atuin_tarball_url: >-
+      {{
+        (
+          atuin_latest.json.assets
+          | selectattr('name', 'equalto', 'atuin-' ~ atuin_release_arch ~ '.tar.gz')
+          | map(attribute='browser_download_url')
+          | list
+          | first
+        )
+      }}
+
+- name: Falhar se nao houver tarball do atuin para a arquitetura
+  fail:
+    msg: "Nao foi encontrado tarball do atuin para a arquitetura {{ atuin_release_arch }}."
+  when: atuin_tarball_url | default('') | trim == ''
+
+- name: Verificar versao instalada do atuin
+  command: "{{ dev_home }}/.local/bin/atuin --version"
+  register: atuin_installed
+  failed_when: false
+  changed_when: false
+
+- name: Extrair versao instalada do atuin
+  set_fact:
+    atuin_installed_version: "{{ (atuin_installed.stdout | regex_search('[0-9]+\\.[0-9]+\\.[0-9]+')) | default('', true) }}"
+
+- name: Criar diretoria temporaria do atuin
+  tempfile:
+    state: directory
+    suffix: atuin
+  register: atuin_tmp
+  when: atuin_installed_version != atuin_version
+
+- name: Baixar tarball do atuin
+  get_url:
+    url: "{{ atuin_tarball_url }}"
+    dest: "{{ atuin_tmp.path }}/atuin.tar.gz"
+  when: atuin_installed_version != atuin_version
+
+- name: Extrair atuin
+  unarchive:
+    src: "{{ atuin_tmp.path }}/atuin.tar.gz"
+    dest: "{{ atuin_tmp.path }}"
+    remote_src: yes
+  when: atuin_installed_version != atuin_version
+
+- name: Instalar binario do atuin
+  copy:
+    src: "{{ atuin_tmp.path }}/atuin-{{ atuin_release_arch }}/atuin"
+    dest: "{{ dev_home }}/.local/bin/atuin"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+    remote_src: yes
+  when: atuin_installed_version != atuin_version
+
+- name: Limpar temporarios do atuin
+  file:
+    path: "{{ atuin_tmp.path }}"
+    state: absent
+  when: atuin_installed_version != atuin_version
+
+- name: Ativar atuin no Bash sem sobrescrever o Ctrl+R do fzf
+  copy:
+    dest: "{{ shell_env_dir | default(dev_home ~ '/.bashrc.d') }}/75-atuin.sh"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+    content: |
+      if command -v atuin >/dev/null 2>&1; then
+        eval "$(atuin init bash --disable-ctrl-r)"
+      fi
+
 - name: Consultar release mais recente do pay-respects
   uri:
     url: https://api.github.com/repos/iffse/pay-respects/releases/latest

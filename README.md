@@ -26,6 +26,7 @@ A proposta principal é simples:
   - `tlp-pd` instalado quando disponível no repositório apt
   - `power-profiles-daemon` removido apenas quando o notebook passa a usar TLP
   - Extensão `gTile` instalada a partir do Cinnamon Spices
+  - Cinnamon priorizado em vez de integrações de GNOME Shell
 
 - **Ambiente de Desenvolvimento Completo**
   - Java (SDKMAN, Maven, Gradle)
@@ -44,8 +45,10 @@ A proposta principal é simples:
 
 - **Shell Produtivo (Bash)**
   - fzf
+  - fd
   - ripgrep
   - bat
+  - atuin
   - bash-git-prompt
   - ble.sh (autosuggestions + syntax highlighting)
   - pay-respects (correção/sugestão de comandos)
@@ -65,12 +68,13 @@ A proposta principal é simples:
   - Ferdium (multi-conta para mensageria)
   - Kazam (gravação de tela)
   - Snapshot/Cheese (webcam/foto/vídeo rápido)
-  - Extension Manager para GNOME Shell
   - SSH Pilot (GUI para múltiplas conexões SSH)
   - Spotify
   - Audiotube (YouTube Music)
   - Celluloid (vídeo)
   - gThumb (imagens)
+  - CopyQ
+  - btop
   - Flatpak/Flathub como padrão (fallback .deb/apt/tarball)
 
 - **Google Drive Integrado (Documentos)**

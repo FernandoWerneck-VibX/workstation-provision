@@ -51,18 +51,20 @@
       - zip
       - tar
       - htop
+      - btop
       - rsync
       - vim
       - rar
       - unrar
+      - copyq
       - fzf
+      - fd-find
       - ripgrep
       - bat
       - gpg
       - jq
       - gawk
       - libglib2.0-bin
-      - gnome-shell-extension-manager
       - bash-completion
       - file
       - software-properties-common
@@ -128,6 +130,13 @@
     name: mint-meta-codecs
     state: present
   when: ansible_distribution == "Linux Mint"
+
+- name: Remover GNOME Extension Manager para priorizar Cinnamon Spices
+  apt:
+    name: gnome-shell-extension-manager
+    state: absent
+    purge: yes
+    autoremove: yes
 
 - name: Remover power-profiles-daemon quando TLP gerencia a energia do notebook
   apt:
@@ -247,3 +256,20 @@
     dest: /usr/local/bin/bat
     state: link
   when: batcat_stat.stat.exists and not bat_stat.stat.exists
+
+- name: Verificar fdfind
+  stat:
+    path: /usr/bin/fdfind
+  register: fdfind_stat
+
+- name: Verificar fd
+  stat:
+    path: /usr/bin/fd
+  register: fd_stat
+
+- name: Criar symlink fd -> fdfind
+  file:
+    src: /usr/bin/fdfind
+    dest: /usr/local/bin/fd
+    state: link
+  when: fdfind_stat.stat.exists and not fd_stat.stat.exists
