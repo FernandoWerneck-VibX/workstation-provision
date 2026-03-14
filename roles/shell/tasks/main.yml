@@ -258,9 +258,16 @@
     block: |
       {% raw %}
       __fzf_history() {
-        local selected=$(history | fzf)
-        READLINE_LINE="${selected#* }"
-        READLINE_POINT=${#READLINE_LINE}
+        local selected
+        selected="$(
+          fc -ln 1 \
+            | awk '!seen[$0]++' \
+            | fzf --tac --height 40% --reverse --query="$READLINE_LINE"
+        )"
+        if [ -n "$selected" ]; then
+          READLINE_LINE="$selected"
+          READLINE_POINT=${#READLINE_LINE}
+        fi
       }
-      bind '"\C-r": "__fzf_history"'
+      bind -x '"\C-r": __fzf_history'
       {% endraw %}
