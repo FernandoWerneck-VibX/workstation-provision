@@ -1,4 +1,5 @@
 ---
 cinnamon_enable_gtile: true
-cinnamon_gtile_repo: "https://github.com/shuairan/gTile.git"
+cinnamon_gtile_repo: "https://github.com/linuxmint/cinnamon-spices-extensions.git"
+cinnamon_gtile_repo_version: "master"
 cinnamon_gtile_extension_id: "gTile@shuairan"

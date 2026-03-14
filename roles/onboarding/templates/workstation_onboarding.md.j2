@@ -12,7 +12,8 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Snap: desativado (snapd removido e bloqueado por pin apt)
 - Flatpak/Flathub: habilitado como padrao
 - Swappiness: `5`
-- TLP: habilitado
+- TLP: `{% if common_manage_laptop_power | default(false) %}habilitado{% else %}nao aplicado (desktop ou desabilitado){% endif %}`
+- tlp-pd: `{% if common_tlp_pd_available | default(false) %}habilitado{% else %}nao instalado{% endif %}`
 - Chezmoi modo: `{{ chezmoi_apply_mode | default('none') }}`
 - Clonagem automatica de projetos: `{% if projects_enable | default(true) | bool %}habilitada{% else %}desabilitada{% endif %}`
 - Syncthing: `{% if syncthing_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`

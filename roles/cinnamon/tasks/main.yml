@@ -15,16 +15,61 @@
     mode: "0755"
   when: cinnamon_enable_gtile | bool
 
-- name: Instalar extensao gTile
+- name: Garantir cache local de fontes do Cinnamon Spices
+  file:
+    path: "{{ dev_home }}/.local/src"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  when: cinnamon_enable_gtile | bool
+
+- name: Baixar Cinnamon Spices
   become_user: "{{ dev_user }}"
   git:
     repo: "{{ cinnamon_gtile_repo }}"
-    dest: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}"
-    version: master
+    dest: "{{ dev_home }}/.local/src/cinnamon-spices-extensions"
+    version: "{{ cinnamon_gtile_repo_version }}"
     update: yes
+    depth: 1
   environment:
     GIT_TERMINAL_PROMPT: "0"
     GIT_ASKPASS: /bin/true
+  register: cinnamon_spices_repo
+  when:
+    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_writable.rc == 0
+    - cinnamon_extensions_writable.stdout | trim == "true"
+
+- name: Remover instalacao anterior incorreta do gTile
+  file:
+    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}"
+    state: absent
+  when:
+    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_writable.rc == 0
+    - cinnamon_extensions_writable.stdout | trim == "true"
+
+- name: Recriar diretorio do gTile
+  file:
+    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  when:
+    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_writable.rc == 0
+    - cinnamon_extensions_writable.stdout | trim == "true"
+
+- name: Instalar gTile a partir do pacote oficial do Cinnamon Spices
+  copy:
+    src: "{{ dev_home }}/.local/src/cinnamon-spices-extensions/{{ cinnamon_gtile_extension_id }}/files/{{ cinnamon_gtile_extension_id }}/"
+    dest: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}/"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: preserve
+    remote_src: yes
   when:
     - cinnamon_enable_gtile | bool
     - cinnamon_extensions_writable.rc == 0

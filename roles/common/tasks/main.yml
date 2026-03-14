@@ -8,11 +8,34 @@
       Nao foi possivel resolver dev_user automaticamente.
       Execute o ansible-playbook com um usuario valido do sistema (nao root).
 
+- name: Detectar se a maquina possui bateria
+  find:
+    paths: "{{ common_power_supply_path }}"
+    patterns: "BAT*"
+    file_type: any
+  register: common_battery_devices
+  failed_when: false
+  changed_when: false
+
+- name: Definir estrategia de energia da maquina
+  set_fact:
+    common_is_notebook: "{{ (common_battery_devices.matched | default(0) | int) > 0 }}"
+    common_manage_laptop_power: >-
+      {{
+        (common_enable_tlp | bool)
+        and
+        (
+          (not (common_tlp_notebook_only | bool))
+          or ((common_battery_devices.matched | default(0) | int) > 0)
+        )
+      }}
+
 - name: Atualizar sistema
   apt:
     update_cache: yes
     cache_valid_time: "{{ apt_cache_valid_time }}"
     upgrade: dist
+  when: common_system_upgrade | bool
 
 - name: Instalar pacotes essenciais
   apt:
@@ -38,9 +61,44 @@
       - software-properties-common
       - fuse3
       - irqbalance
-      - tlp
       - systemd-zram-generator
       - kazam
+
+- name: Instalar stack de energia para notebook
+  apt:
+    name:
+      - tlp
+    state: present
+  when: common_manage_laptop_power
+
+- name: Verificar disponibilidade do tlp-pd
+  command: apt-cache show tlp-pd
+  register: common_tlp_pd_package
+  failed_when: false
+  changed_when: false
+  when:
+    - common_manage_laptop_power
+    - common_enable_tlp_pd | bool
+
+- name: Definir disponibilidade do tlp-pd
+  set_fact:
+    common_tlp_pd_available: >-
+      {{
+        common_tlp_pd_package.rc == 0
+        and (common_tlp_pd_package.stdout | trim | length > 0)
+      }}
+  when:
+    - common_manage_laptop_power
+    - common_enable_tlp_pd | bool
+
+- name: Instalar tlp-pd quando disponivel
+  apt:
+    name: tlp-pd
+    state: present
+  when:
+    - common_manage_laptop_power
+    - common_enable_tlp_pd | bool
+    - common_tlp_pd_available | default(false)
 
 - name: Remover snapd para manter Snap desativado
   apt:
@@ -64,10 +122,11 @@
     state: present
   when: ansible_distribution == "Linux Mint"
 
-- name: Remover power-profiles-daemon para evitar conflito com TLP
+- name: Remover power-profiles-daemon quando TLP gerencia a energia do notebook
   apt:
     name: power-profiles-daemon
     state: absent
+  when: common_manage_laptop_power
 
 - name: Garantir servico power-profiles-daemon parado e desabilitado
   systemd:
@@ -75,6 +134,7 @@
     state: stopped
     enabled: no
   failed_when: false
+  when: common_manage_laptop_power
 
 - name: Permitir FUSE allow_other
   lineinfile:
@@ -116,6 +176,17 @@
     enabled: yes
     state: started
   failed_when: false
+  when: common_manage_laptop_power
+
+- name: Habilitar tlp-pd quando instalado
+  systemd:
+    name: tlp-pd
+    enabled: yes
+    state: started
+  failed_when: false
+  when:
+    - common_manage_laptop_power
+    - common_tlp_pd_available | default(false)
 
 - name: Verificar gsettings
   command: which gsettings

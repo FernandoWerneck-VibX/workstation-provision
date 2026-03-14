@@ -22,9 +22,10 @@ A proposta principal é simples:
   - Codecs multimídia instalados (`mint-meta-codecs`)
   - Sysctl e ZRAM otimizados (`vm.swappiness=5`)
   - `fstrim.timer` e `irqbalance` habilitados
-  - `tlp` habilitado
-  - `power-profiles-daemon` removido para evitar conflito com TLP
-  - Extensão `gTile` instalada no Cinnamon
+  - `tlp` habilitado apenas em notebooks
+  - `tlp-pd` instalado quando disponível no repositório apt
+  - `power-profiles-daemon` removido apenas quando o notebook passa a usar TLP
+  - Extensão `gTile` instalada a partir do Cinnamon Spices
 
 - **Ambiente de Desenvolvimento Completo**
   - Java (SDKMAN, Maven, Gradle)
@@ -59,7 +60,7 @@ A proposta principal é simples:
   - Discord
   - Ferdium (multi-conta para mensageria)
   - Kazam (gravação de tela)
-  - Cheese (webcam/foto/vídeo rápido)
+  - Snapshot/Cheese (webcam/foto/vídeo rápido)
   - SSH Pilot (GUI para múltiplas conexões SSH)
   - Spotify
   - Audiotube (YouTube Music)
@@ -98,10 +99,11 @@ cd fernando-workstation
 
 Edite o arquivo `group_vars/all.yml`:
 
-- `dev_user` e `dev_home` (automático por padrão)
 - `git_user_name` e `git_user_email` (obrigatório preencher)
 - `chezmoi_repo` (opcional, se quiser aplicar dotfiles de um repositório remoto)
 - `projects_repos` (já vem com exemplos reais e clonagem automática habilitada)
+
+`dev_user` e `dev_home` são resolvidos automaticamente a partir do usuário do SO que executa o `ansible-playbook`.
 
 Se usar repositórios Git privados (`git@github.com:...`), garanta que sua chave SSH está configurada no GitHub antes de rodar o playbook.
 
@@ -135,7 +137,8 @@ O script irá:
 1. Instalar Ansible
 2. Instalar Git
 3. Executar o playbook principal
-4. Configurar todo o ambiente automaticamente
+
+Atualizações do sistema, upgrades e demais mudanças de estado ficam centralizadas no playbook, não no `bootstrap.sh`.
 
 ## 🔹 4. Use perfis por tipo de máquina (pessoal x colaborador)
 
@@ -180,7 +183,7 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass
 
 Isso ativará:
 
-- `/home/SEU_USUARIO/GoogleDrive`  
+- `~/GoogleDrive`
 - Bind para `~/docs`  
 
 Obs: o serviço só inicia se `~/.config/rclone/rclone.conf` existir.
@@ -194,7 +197,7 @@ Use esta etapa apenas quando `syncthing_enable: true` (ex.: perfil `personal`).
 Após rodar o playbook, o serviço do Syncthing ficará ativo:
 
 ```bash
-sudo systemctl status syncthing@SEU_USUARIO
+sudo systemctl status "syncthing@$(id -un)"
 ```
 
 Abra a interface web local para parear os dispositivos:
@@ -265,6 +268,8 @@ projects_enable: true
 syncthing_folders:
   - "{{ dev_home }}/Downloads"
 cinnamon_enable_gtile: true
+common_tlp_notebook_only: true
+common_enable_tlp_pd: true
 
 chezmoi_repo: ""
 
@@ -284,7 +289,7 @@ flatpak_apps:
   - id: "md.obsidian.Obsidian"
   - id: "com.getpostman.Postman"
   - id: "org.ferdium.Ferdium"
-  - id: "org.gnome.Cheese"
+  - id: "org.gnome.Snapshot"
   - id: "io.github.mfat.sshpilot"
   - id: "com.spotify.Client"
   - id: "org.kde.audiotube"
@@ -296,6 +301,9 @@ No estado atual do projeto:
   - repositório remoto (`chezmoi_repo`)
   - fonte local no projeto (`./chezmoi`)
 - `projects_repos` já vem preenchido e os repositórios são clonados em `~/projects` mantendo subpastas (`vib/*` e `personal/*`)
+- `gTile` é instalado a partir do repositório oficial `linuxmint/cinnamon-spices-extensions`
+- `tlp` só é aplicado automaticamente quando a máquina é detectada como notebook
+- `tlp-pd` é instalado apenas se existir nos repositórios apt disponíveis
 
 Opcional: caso queira forçar outro release Ubuntu para o repositório Docker, defina:
 
@@ -345,7 +353,7 @@ sudo systemctl restart rclone-gdrive
 ## 🔹 Testar Syncthing
 
 ```bash
-sudo systemctl status syncthing@SEU_USUARIO
+sudo systemctl status "syncthing@$(id -un)"
 ```
 
 ## 🔹 Testar Docker
