@@ -47,3 +47,11 @@
   loop: "{{ app_validation.results }}"
   loop_control:
     label: "{{ item.item.id }}"
+
+- name: Higienizar duplicidade Flatpak x fallback
+  include_tasks: cleanup_single_app.yml
+  loop: "{{ flatpak_apps }}"
+  loop_control:
+    loop_var: cleanup_app
+    label: "{{ cleanup_app.id }}"
+  when: desktop_apps_cleanup_duplicates | bool

@@ -1,6 +1,7 @@
 ---
 flatpak_remote_name: "flathub"
 flatpak_remote_url: "https://flathub.org/repo/flathub.flatpakrepo"
+desktop_apps_cleanup_duplicates: true
 postman_deb_url: ""
 postman_deb_package_name: ""
 flatpak_apps:
