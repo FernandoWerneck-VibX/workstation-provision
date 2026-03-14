@@ -59,7 +59,7 @@ flatpak_apps:
   - id: "org.ferdium.Ferdium"
     fallback:
       apt: "ferdium"
-  - id: "org.gnome.Cheese"
+  - id: "org.gnome.Snapshot"
     fallback:
       apt: "cheese"
   - id: "io.github.mfat.sshpilot"
