@@ -9,7 +9,10 @@
     - dev_tools
     - devops
     - desktop_apps
-    - projects
-    - syncthing
-    - gdrive
+    - role: projects
+      when: projects_enable | default(true) | bool
+    - role: syncthing
+      when: syncthing_enable | default(true) | bool
+    - role: gdrive
+      when: gdrive_enable | default(true) | bool
     - onboarding

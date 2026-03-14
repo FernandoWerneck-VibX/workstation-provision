@@ -1,0 +1,5 @@
+---
+# Perfil para sua maquina pessoal (mantem todos os recursos ativos)
+syncthing_enable: true
+gdrive_enable: true
+projects_enable: true

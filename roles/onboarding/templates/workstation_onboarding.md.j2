@@ -14,7 +14,9 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Swappiness: `5`
 - TLP: habilitado
 - Chezmoi modo: `{{ chezmoi_apply_mode | default('none') }}`
-- Repositorios para clone automatico: `{{ projects_repos | length }}`
+- Clonagem automatica de projetos: `{% if projects_enable | default(true) | bool %}habilitada{% else %}desabilitada{% endif %}`
+- Syncthing: `{% if syncthing_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
+- Google Drive (rclone): `{% if gdrive_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 
 ## Apps Desktop Provisionados
 
@@ -29,43 +31,59 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Docker Engine + Docker Compose plugin
 - kubectl, helm, k9s, kind
 - SDKMAN (Java), NVM (Node), Pyenv (Python), Flutter
+{% if syncthing_enable | default(true) | bool %}
 - Syncthing (`syncthing@{{ dev_user }}`)
+{% endif %}
+{% if gdrive_enable | default(true) | bool %}
 - Google Drive via rclone (bind para `~/docs`)
+{% endif %}
 
 ## Repositorios de Projeto (clone automatico)
 
+{% if projects_enable | default(true) | bool %}
 {% for repo in projects_repos %}
 - `{{ repo.url }}` -> `{{ projects_dir }}/{{ repo.path | default(repo.name) }}`
 {% else %}
 - Nenhum repositorio configurado em `projects_repos`
 {% endfor %}
+{% else %}
+- Clonagem desabilitada (`projects_enable: false`)
+{% endif %}
 
 ## Acoes Manuais (obrigatorias e opcionais)
 
-1. Validar variaveis em `group_vars/all.yml`:
+- Validar variaveis em `group_vars/all.yml`:
    - `dev_user`, `dev_home`, `git_user_name`, `git_user_email`
    - `projects_repos` (opcional, se quiser customizar a lista de clone)
    - `chezmoi_repo` (opcional) ou pasta local `./chezmoi` (se quiser aplicar dotfiles)
-2. Se usar repositorios Git privados:
+- Se usar repositorios Git privados:
    - Garantir chave SSH no provedor Git (GitHub/GitLab)
-3. Configurar Google Drive na primeira maquina:
+{% if gdrive_enable | default(true) | bool %}
+- Configurar Google Drive na primeira maquina:
    - `rclone config`
    - Criar remote com nome `gdrive`
-4. Parear Syncthing entre maquinas:
+{% endif %}
+{% if syncthing_enable | default(true) | bool %}
+- Parear Syncthing entre maquinas:
    - Abrir `http://127.0.0.1:8384`
    - Adicionar Device IDs e compartilhar pastas
-5. Validar Docker para usuario sem sudo:
+{% endif %}
+- Validar Docker para usuario sem sudo:
    - Fazer logout/login apos provisionamento
-6. Configurar contas nos apps:
+- Configurar contas nos apps:
    - Ferdium, Discord, Spotify, SSH Pilot, Chrome
-7. Validar/ajustar dotfiles (chezmoi):
+- Validar/ajustar dotfiles (chezmoi):
    - `chezmoi status`
 
 ## Comandos de Validacao Rapida
 
 ```bash
+{% if syncthing_enable | default(true) | bool %}
 systemctl status syncthing@{{ dev_user }} --no-pager
+{% endif %}
+{% if gdrive_enable | default(true) | bool %}
 systemctl status rclone-gdrive --no-pager
+{% endif %}
 docker version
 docker compose version
 flatpak remotes

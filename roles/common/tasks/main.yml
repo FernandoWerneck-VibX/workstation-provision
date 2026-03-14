@@ -1,4 +1,12 @@
 ---
+- name: Validar configuracao obrigatoria do usuario
+  assert:
+    that:
+      - (dev_user | trim | length) > 0
+    fail_msg: >-
+      Nao foi possivel resolver dev_user automaticamente.
+      Execute o ansible-playbook com um usuario valido do sistema.
+
 - name: Atualizar sistema
   apt:
     update_cache: yes

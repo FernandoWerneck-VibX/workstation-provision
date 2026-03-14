@@ -1,0 +1,7 @@
+---
+# Perfil para notebook de colaborador
+# Nao provisiona dados/pastas de uso pessoal.
+syncthing_enable: false
+gdrive_enable: false
+projects_enable: false
+projects_repos: []

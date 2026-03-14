@@ -53,6 +53,7 @@ A proposta principal é simples:
 - **Aplicativos Essenciais**
   - Chrome
   - Visual Studio Code
+  - IntelliJ IDEA Ultimate
   - Sublime Text
   - Obsidian
   - Postman
@@ -98,18 +99,19 @@ cd fernando-workstation
 
 Edite o arquivo `group_vars/all.yml`:
 
-- `dev_user` e `dev_home` (se seu usuário não for `fernando`)
-- `git_user_name` e `git_user_email`
+- `dev_user` e `dev_home` (automático por padrão)
+- `git_user_name` e `git_user_email` (obrigatório preencher)
 - `chezmoi_repo` (opcional, se quiser aplicar dotfiles de um repositório remoto)
 - `projects_repos` (já vem com exemplos reais e clonagem automática habilitada)
 
 Se usar repositórios Git privados (`git@github.com:...`), garanta que sua chave SSH está configurada no GitHub antes de rodar o playbook.
 
-Se seu usuário local não for `fernando`, ajuste também `inventory.ini`:
+Ajuste `inventory.ini` apenas se precisar de algo específico.
+Por padrão, o projeto usa conexão local e detecta automaticamente o usuário do SO que executa o `ansible-playbook`.
 
 ```ini
 [local]
-localhost ansible_connection=local ansible_user=SEU_USUARIO
+localhost ansible_connection=local
 ```
 
 ## 🔹 3. Execute o bootstrap
@@ -122,13 +124,34 @@ chmod +x bootstrap.sh
 O script irá:
 
 1. Instalar Ansible
-2. Validar dependências
+2. Instalar Git
 3. Executar o playbook principal
 4. Configurar todo o ambiente automaticamente
+
+## 🔹 4. Use perfis por tipo de máquina (pessoal x colaborador)
+
+Este projeto agora inclui perfis prontos em `profiles/`:
+
+- `profiles/personal.yml` (mantém tudo ativo)
+- `profiles/collaborator.yml` (desativa Google Drive, Syncthing e clonagem automática de projetos)
+
+Exemplo para notebook de colaborador:
+
+```bash
+ansible-playbook -i inventory.ini site.yml --ask-become-pass -e @profiles/collaborator.yml
+```
+
+Exemplo para sua máquina pessoal:
+
+```bash
+ansible-playbook -i inventory.ini site.yml --ask-become-pass -e @profiles/personal.yml
+```
 
 ---
 
 # ⚙️ Primeira Execução com Google Drive
+
+Use esta etapa apenas quando `gdrive_enable: true` (ex.: perfil `personal`).
 
 A integração com o Google Drive usa **rclone**.
 
@@ -156,6 +179,8 @@ Obs: o serviço só inicia se `~/.config/rclone/rclone.conf` existir.
 ---
 
 # 🔄 Primeira Execução com Syncthing
+
+Use esta etapa apenas quando `syncthing_enable: true` (ex.: perfil `personal`).
 
 Após rodar o playbook, o serviço do Syncthing ficará ativo:
 
@@ -189,8 +214,8 @@ O arquivo inclui:
 
 ## O que ainda é manual (resumo rápido)
 
-- Configurar `rclone config` (Google Drive) na primeira máquina
-- Parear dispositivos/pastas no Syncthing (`http://127.0.0.1:8384`)
+- Configurar `rclone config` (Google Drive) na primeira máquina, se `gdrive_enable: true`
+- Parear dispositivos/pastas no Syncthing (`http://127.0.0.1:8384`), se `syncthing_enable: true`
 - Fazer logout/login para aplicar grupo `docker`
 - Configurar contas dos apps (Chrome, Discord, Ferdium, Spotify etc.)
 - Se usar Git privado: configurar chave SSH no provedor
@@ -209,11 +234,12 @@ group_vars/all.yml
 ### Exemplos de configurações disponíveis:
 
 ```yaml
-dev_user: fernando
+# Detectado automaticamente a partir do usuario que executa o ansible-playbook
+dev_user: "{{ lookup('env', 'SUDO_USER') | default(lookup('env', 'USER'), true) }}"
 dev_home: "/home/{{ dev_user }}"
 
-git_user_name: "Fernando Werneck"
-git_user_email: "fernando@vibx.com.br"
+git_user_name: "SEU_NOME"
+git_user_email: "seu-email@exemplo.com"
 
 java_version: "24-open"
 node_version: "lts/*"
@@ -225,6 +251,8 @@ helm_version: "latest"
 k9s_version: "latest"
 kind_version: "latest"
 syncthing_enable: true
+gdrive_enable: true
+projects_enable: true
 syncthing_folders:
   - "{{ dev_home }}/Downloads"
 cinnamon_enable_gtile: true
@@ -243,6 +271,7 @@ projects_repos:
     url: git@github.com:FernandoWerneck/market-analysis-data.git
 
 flatpak_apps:
+  - id: "com.jetbrains.IntelliJ-IDEA-Ultimate"
   - id: "md.obsidian.Obsidian"
   - id: "com.getpostman.Postman"
   - id: "org.ferdium.Ferdium"

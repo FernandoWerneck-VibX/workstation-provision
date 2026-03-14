@@ -1,4 +1,17 @@
 ---
+- name: Validar configuracao obrigatoria do Git
+  assert:
+    that:
+      - git_user_name is defined
+      - git_user_email is defined
+      - (git_user_name | trim | length) > 0
+      - (git_user_email | trim | length) > 0
+      - git_user_name != "SEU_NOME"
+      - git_user_email != "seu-email@exemplo.com"
+    fail_msg: >-
+      Defina git_user_name e git_user_email em group_vars/all.yml
+      antes de executar o playbook.
+
 - name: Configurar Git
   become_user: "{{ dev_user }}"
   block:

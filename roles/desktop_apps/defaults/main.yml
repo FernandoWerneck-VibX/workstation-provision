@@ -20,6 +20,7 @@ flatpak_apps:
       apt_key_dest: "/etc/apt/keyrings/microsoft.gpg"
       apt_repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
       apt_package: "code"
+  - id: "com.jetbrains.IntelliJ-IDEA-Ultimate"
   - id: "com.sublimetext.three"
     fallback:
       apt_key_url: "https://download.sublimetext.com/sublimehq-pub.gpg"
