@@ -121,6 +121,9 @@ chmod +x bootstrap.sh
 ./bootstrap.sh
 ```
 
+Execute como usuario comum (nao `root` e sem `sudo` no comando do playbook).
+O provisionamento valida `dev_user` e interrompe se ele resolver para `root`.
+
 O script irá:
 
 1. Instalar Ansible
