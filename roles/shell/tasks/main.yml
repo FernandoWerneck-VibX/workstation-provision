@@ -214,15 +214,12 @@
     purge: yes
     autoremove: yes
 
-- name: Remover thefuck do pipx
+- name: Remover thefuck do uv
   become_user: "{{ dev_user }}"
-  command: pipx uninstall thefuck
-  environment:
-    PIPX_HOME: "{{ dev_home }}/.local/pipx"
-    PIPX_BIN_DIR: "{{ dev_home }}/.local/bin"
+  command: "{{ dev_home }}/.local/bin/uv tool uninstall thefuck"
   failed_when: false
-  changed_when: "'uninstalled' in (thefuck_pipx_remove.stdout | default(''))"
-  register: thefuck_pipx_remove
+  changed_when: "'Uninstalled' in (thefuck_uv_remove.stdout | default(''))"
+  register: thefuck_uv_remove
 
 - name: Remover arquivos locais remanescentes do thefuck
   file:
@@ -231,6 +228,7 @@
   loop:
     - "{{ dev_home }}/.local/bin/thefuck"
     - "{{ dev_home }}/.local/pipx/venvs/thefuck"
+    - "{{ dev_home }}/.local/share/uv/tools/thefuck"
   failed_when: false
 
 - name: Remover bloco do thefuck do Bash

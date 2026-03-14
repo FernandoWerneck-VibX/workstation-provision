@@ -31,7 +31,6 @@ A proposta principal é simples:
   - Java (SDKMAN, Maven, Gradle)
   - Node (NVM, Yarn, PNPM, Vue CLI, Vite)
   - Python (Pyenv)
-  - `pipx` para CLIs Python isolados
   - `uv` para toolchain Python e ferramentas de projeto
   - `pre-commit`, `yamllint` e `ansible-lint`
   - Flutter SDK
@@ -77,6 +76,7 @@ A proposta principal é simples:
 - **Google Drive Integrado (Documentos)**
   - rclone + systemd service
   - bind automático para `~/docs`
+  - pasta `~/GoogleDrive/ssh` para backup manual de chaves SSH
 
 - **Sincronização Entre Máquinas (Syncthing)**
   - serviço `syncthing@usuario` habilitado
@@ -199,7 +199,8 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass
 Isso ativará:
 
 - `~/GoogleDrive`
-- Bind para `~/docs`  
+- Bind para `~/docs`
+- Pasta `~/GoogleDrive/ssh` para backup manual do conteúdo de `~/.ssh`
 
 Obs: o serviço só inicia se `~/.config/rclone/rclone.conf` existir.
 
@@ -322,6 +323,7 @@ No estado atual do projeto:
 - `tlp-pd` é instalado apenas se existir nos repositórios apt disponíveis
 - integrações do Bash ficam em arquivos separados dentro de `~/.bashrc.d`
 - `pre-commit`, `yamllint` e `ansible-lint` são instalados via `uv tool install`
+- o Google Drive cria `docs` e `ssh` na raiz montada; apenas `docs` é bindado localmente
 
 Opcional: caso queira forçar outro release Ubuntu para o repositório Docker, defina:
 

@@ -37,6 +37,7 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 {% endif %}
 {% if gdrive_enable | default(true) | bool %}
 - Google Drive via rclone (bind para `~/docs`)
+- Pasta de backup de chaves em `~/GoogleDrive/ssh`
 {% endif %}
 
 ## Repositorios de Projeto (clone automatico)
@@ -63,6 +64,7 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Configurar Google Drive na primeira maquina:
    - `rclone config`
    - Criar remote com nome `gdrive`
+   - Copiar manualmente o conteudo de `~/.ssh` para `~/GoogleDrive/ssh` se quiser backup das chaves
 {% endif %}
 {% if syncthing_enable | default(true) | bool %}
 - Parear Syncthing entre maquinas:

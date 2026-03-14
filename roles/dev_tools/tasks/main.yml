@@ -68,7 +68,6 @@
 - name: Dependências Pyenv
   apt:
     name:
-      - pipx
       - python3-venv
       - make
       - build-essential
@@ -82,6 +81,13 @@
       - libffi-dev
       - liblzma-dev
       - python3-openssl
+
+- name: Remover pipx para padronizar ferramentas Python com uv
+  apt:
+    name: pipx
+    state: absent
+    purge: yes
+    autoremove: yes
 
 - name: Verificar uv instalado
   stat:

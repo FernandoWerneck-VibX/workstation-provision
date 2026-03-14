@@ -1,2 +1,9 @@
 ---
 gdrive_enable: true
+gdrive_remote_folders:
+  - docs
+  - ssh
+gdrive_bind_mounts:
+  - remote_folder: docs
+    where: "{{ dev_home }}/docs"
+    unit_name: "home-{{ dev_user }}-docs.mount"

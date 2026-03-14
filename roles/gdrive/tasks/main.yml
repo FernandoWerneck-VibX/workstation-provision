@@ -15,15 +15,17 @@
     state: directory
     owner: "{{ dev_user }}"
     group: "{{ dev_user }}"
-  loop: [docs]
+  loop: "{{ gdrive_remote_folders }}"
 
-- name: Garantir pastas locais
+- name: Garantir pastas locais para binds
   file:
-    path: "{{ dev_home }}/{{ item }}"
+    path: "{{ item.where }}"
     state: directory
     owner: "{{ dev_user }}"
     group: "{{ dev_user }}"
-  loop: [docs]
+  loop: "{{ gdrive_bind_mounts }}"
+  loop_control:
+    label: "{{ item.where }}"
 
 - name: Instalar service do rclone
   copy:
@@ -46,23 +48,26 @@
       [Install]
       WantedBy=multi-user.target
 
-- name: Instalar bind mount para docs
+- name: Instalar bind mounts do Google Drive
   copy:
-    dest: "/etc/systemd/system/home-{{ dev_user }}-docs.mount"
+    dest: "/etc/systemd/system/{{ item.unit_name }}"
     content: |
       [Unit]
-      Description=Bind GoogleDrive docs
+      Description=Bind GoogleDrive {{ item.remote_folder }}
       After=rclone-gdrive.service
       Requires=rclone-gdrive.service
 
       [Mount]
-      What={{ dev_home }}/GoogleDrive/docs
-      Where={{ dev_home }}/docs
+      What={{ dev_home }}/GoogleDrive/{{ item.remote_folder }}
+      Where={{ item.where }}
       Type=none
       Options=bind
 
       [Install]
       WantedBy=multi-user.target
+  loop: "{{ gdrive_bind_mounts }}"
+  loop_control:
+    label: "{{ item.unit_name }}"
 
 - name: Recarregar systemd
   systemd:
@@ -103,8 +108,7 @@
   systemd:
     name: "{{ item }}"
     enabled: yes
-  loop:
-    - "home-{{ dev_user }}-docs.mount"
+  loop: "{{ gdrive_bind_mounts | map(attribute='unit_name') | list }}"
 
 - name: Iniciar rclone se configurado
   systemd:
@@ -116,6 +120,5 @@
   systemd:
     name: "{{ item }}"
     state: started
-  loop:
-    - "home-{{ dev_user }}-docs.mount"
+  loop: "{{ gdrive_bind_mounts | map(attribute='unit_name') | list }}"
   when: rclone_conf.stat.exists
