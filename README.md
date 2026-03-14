@@ -46,7 +46,7 @@ A proposta principal é simples:
   - bat
   - bash-git-prompt
   - ble.sh (autosuggestions + syntax highlighting)
-  - thefuck (correção/sugestão de comandos)
+  - pay-respects (correção/sugestão de comandos)
   - Git com autocompletion
   - Zsh não é configurado por padrão
 

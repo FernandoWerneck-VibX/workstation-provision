@@ -146,12 +146,51 @@
           source -- "$HOME/.local/share/blesh/ble.sh"
       fi
 
-- name: Instalar thefuck
-  apt:
-    name:
-      - pipx
-      - python3-venv
-    state: present
+- name: Definir arquitetura deb do pay-respects
+  set_fact:
+    pay_respects_deb_arch: >-
+      {{
+        'amd64' if ansible_architecture == 'x86_64'
+        else 'arm64' if ansible_architecture in ['aarch64', 'arm64']
+        else 'armhf' if ansible_architecture in ['armv7l', 'armv7']
+        else 'i386' if ansible_architecture in ['i386', 'i686']
+        else ansible_architecture
+      }}
+
+- name: Consultar release mais recente do pay-respects
+  uri:
+    url: https://api.github.com/repos/iffse/pay-respects/releases/latest
+    return_content: yes
+    headers:
+      User-Agent: ansible
+  register: pay_respects_latest
+  failed_when: false
+  changed_when: false
+
+- name: Falhar se nao conseguir consultar release do pay-respects
+  fail:
+    msg: "Falha ao consultar release do pay-respects no GitHub. Verifique rede/proxy."
+  when: pay_respects_latest.status is not defined or pay_respects_latest.status != 200
+
+- name: Definir release do pay-respects
+  set_fact:
+    pay_respects_tag: "{{ pay_respects_latest.json.tag_name }}"
+    pay_respects_version: "{{ pay_respects_latest.json.tag_name | regex_replace('^v', '') }}"
+    pay_respects_deb_url: >-
+      {{
+        (
+          pay_respects_latest.json.assets
+          | selectattr('name', 'equalto', 'pay-respects_' ~ (pay_respects_latest.json.tag_name | regex_replace('^v', '')) ~ '-1_' ~ pay_respects_deb_arch ~ '.deb')
+          | map(attribute='browser_download_url')
+          | list
+          | first
+        )
+      }}
+
+- name: Falhar se nao houver pacote deb do pay-respects para a arquitetura
+  fail:
+    msg: "Nao foi encontrado pacote .deb do pay-respects para a arquitetura {{ pay_respects_deb_arch }}."
+  when: pay_respects_deb_url | default('') | trim == ''
 
 - name: Remover thefuck do apt para evitar conflito com Python 3.12
   apt:
@@ -160,25 +199,56 @@
     purge: yes
     autoremove: yes
 
-- name: Instalar thefuck via pipx
+- name: Remover thefuck do pipx
   become_user: "{{ dev_user }}"
-  command: pipx install --force thefuck
+  command: pipx uninstall thefuck
   environment:
     PIPX_HOME: "{{ dev_home }}/.local/pipx"
     PIPX_BIN_DIR: "{{ dev_home }}/.local/bin"
+  failed_when: false
+  changed_when: "'uninstalled' in (thefuck_pipx_remove.stdout | default(''))"
+  register: thefuck_pipx_remove
 
-- name: Ativar thefuck no Bash
+- name: Remover arquivos locais remanescentes do thefuck
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ dev_home }}/.local/bin/thefuck"
+    - "{{ dev_home }}/.local/pipx/venvs/thefuck"
+  failed_when: false
+
+- name: Remover bloco do thefuck do Bash
+  become_user: "{{ dev_user }}"
+  blockinfile:
+    path: "{{ dev_home }}/.bashrc"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - thefuck"
+    state: absent
+
+- name: Verificar versao instalada do pay-respects
+  command: pay-respects --version
+  register: pay_respects_installed
+  failed_when: false
+  changed_when: false
+
+- name: Extrair versao instalada do pay-respects
+  set_fact:
+    pay_respects_installed_version: "{{ (pay_respects_installed.stdout | regex_search('[0-9]+\\.[0-9]+\\.[0-9]+')) | default('', true) }}"
+
+- name: Instalar pay-respects via pacote deb oficial
+  apt:
+    deb: "{{ pay_respects_deb_url }}"
+  when: pay_respects_installed_version != pay_respects_version
+
+- name: Ativar pay-respects no Bash
   become_user: "{{ dev_user }}"
   blockinfile:
     path: "{{ dev_home }}/.bashrc"
     insertafter: EOF
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - thefuck"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - pay-respects"
     block: |
-      if [ -d "$HOME/.local/bin" ]; then
-          export PATH="$HOME/.local/bin:$PATH"
-      fi
-      if [ -x "$HOME/.local/bin/thefuck" ]; then
-          eval "$("$HOME/.local/bin/thefuck" --alias)"
+      if command -v pay-respects >/dev/null 2>&1; then
+          eval "$(pay-respects bash --alias fuck)"
       fi
 
 - name: FZF History Search
