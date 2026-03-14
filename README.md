@@ -45,6 +45,8 @@ A proposta principal é simples:
   - ripgrep
   - bat
   - bash-git-prompt
+  - ble.sh (autosuggestions + syntax highlighting)
+  - thefuck (correção/sugestão de comandos)
   - Git com autocompletion
   - Zsh não é configurado por padrão
 

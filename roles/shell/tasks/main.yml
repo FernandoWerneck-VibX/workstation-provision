@@ -101,6 +101,88 @@
           source "$HOME/.bash-git-prompt/gitprompt.sh"
       fi
 
+- name: Garantir diretorio de fontes locais para ferramentas de shell
+  file:
+    path: "{{ dev_home }}/.local/src"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+
+- name: Baixar ble.sh
+  become_user: "{{ dev_user }}"
+  git:
+    repo: https://github.com/akinomyoga/ble.sh.git
+    dest: "{{ dev_home }}/.local/src/ble.sh"
+    version: master
+    depth: 1
+    recursive: yes
+    update: yes
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_ASKPASS: /bin/true
+  register: blesh_repo
+
+- name: Verificar ble.sh instalado
+  stat:
+    path: "{{ dev_home }}/.local/share/blesh/ble.sh"
+  register: blesh_installed
+
+- name: Instalar ble.sh em ~/.local
+  become_user: "{{ dev_user }}"
+  shell: make -C "{{ dev_home }}/.local/src/ble.sh" install PREFIX="{{ dev_home }}/.local"
+  args:
+    executable: /bin/bash
+  when: not blesh_installed.stat.exists or blesh_repo.changed
+
+- name: Ativar ble.sh no Bash
+  become_user: "{{ dev_user }}"
+  blockinfile:
+    path: "{{ dev_home }}/.bashrc"
+    insertafter: EOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ble.sh"
+    block: |
+      if [ -f "$HOME/.local/share/blesh/ble.sh" ]; then
+          source -- "$HOME/.local/share/blesh/ble.sh"
+      fi
+
+- name: Instalar thefuck
+  apt:
+    name: thefuck
+    state: present
+
+- name: Ativar thefuck no Bash
+  become_user: "{{ dev_user }}"
+  blockinfile:
+    path: "{{ dev_home }}/.bashrc"
+    insertafter: EOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - thefuck"
+    block: |
+      if command -v thefuck >/dev/null 2>&1; then
+          eval "$(thefuck --alias)"
+      fi
+
+- name: Remover source legado do bash-autosuggestions
+  become_user: "{{ dev_user }}"
+  lineinfile:
+    path: "{{ dev_home }}/.bashrc"
+    state: absent
+    line: 'source "$HOME/.bash-autosuggestions/bash-autosuggestions.sh"'
+
+- name: Remover source legado do bash-syntax-highlighting
+  become_user: "{{ dev_user }}"
+  lineinfile:
+    path: "{{ dev_home }}/.bashrc"
+    state: absent
+    line: 'source "$HOME/.bash-syntax-highlighting/bash-syntax-highlighting.sh"'
+
+- name: Remover source legado do bash-you-should-use
+  become_user: "{{ dev_user }}"
+  lineinfile:
+    path: "{{ dev_home }}/.bashrc"
+    state: absent
+    line: 'source "$HOME/.bash-you-should-use/you-should-use.sh"'
+
 - name: FZF History Search
   become_user: "{{ dev_user }}"
   blockinfile:
