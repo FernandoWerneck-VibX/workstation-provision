@@ -32,6 +32,7 @@
       - bat
       - gpg
       - jq
+      - gawk
       - bash-completion
       - file
       - software-properties-common

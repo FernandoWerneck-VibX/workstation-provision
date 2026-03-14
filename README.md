@@ -16,8 +16,7 @@ A proposta principal é simples:
 
 - **Sistema Operacional Otimizado**
   - Atualizações automatizadas
-  - Remoção de apps desnecessários
-  - Limpeza de apps desnecessários executada na etapa final do provisionamento
+  - Remoção de apps desnecessários na etapa final do provisionamento
   - Snap desativado (`snapd` removido e bloqueado)
   - Flatpak/Flathub como padrão
   - Codecs multimídia instalados (`mint-meta-codecs`)
