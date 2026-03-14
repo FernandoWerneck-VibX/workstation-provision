@@ -1,0 +1,71 @@
+---
+- name: Inicializar lista de pacotes fallback para higienizacao
+  set_fact:
+    cleanup_fallback_packages: []
+
+- name: Verificar app Flatpak instalada para higienizacao
+  command: flatpak info --system {{ cleanup_app.id }}
+  register: cleanup_flatpak_info
+  failed_when: false
+  changed_when: false
+
+- name: Definir pacotes fallback para higienizacao
+  set_fact:
+    cleanup_fallback_packages: >-
+      {{
+        [
+          cleanup_app.fallback.apt | default('', true),
+          cleanup_app.fallback.apt_package | default('', true),
+          cleanup_app.fallback.package_name | default('', true)
+        ]
+        | map('string')
+        | map('trim')
+        | reject('equalto', '')
+        | unique
+        | list
+      }}
+  when:
+    - cleanup_flatpak_info.rc == 0
+    - cleanup_app.fallback is defined
+
+- name: Remover pacote fallback quando Flatpak existir
+  apt:
+    name: "{{ cleanup_fallback_packages }}"
+    state: absent
+    purge: yes
+    autoremove: yes
+  when:
+    - cleanup_flatpak_info.rc == 0
+    - cleanup_app.fallback is defined
+    - cleanup_fallback_packages is defined
+    - cleanup_fallback_packages | length > 0
+
+- name: Remover binario legado de fallback tarball quando Flatpak existir
+  file:
+    path: "{{ cleanup_app.fallback.bin_path }}"
+    state: absent
+  when:
+    - cleanup_flatpak_info.rc == 0
+    - cleanup_app.fallback is defined
+    - cleanup_app.fallback.tarball is defined
+    - cleanup_app.fallback.bin_path is defined
+
+- name: Remover desktop entry legado de fallback tarball quando Flatpak existir
+  file:
+    path: "{{ cleanup_app.fallback.desktop_entry }}"
+    state: absent
+  when:
+    - cleanup_flatpak_info.rc == 0
+    - cleanup_app.fallback is defined
+    - cleanup_app.fallback.tarball is defined
+    - cleanup_app.fallback.desktop_entry is defined
+
+- name: Remover diretorio legado de fallback tarball quando Flatpak existir
+  file:
+    path: "{{ cleanup_app.fallback.installed_dir }}"
+    state: absent
+  when:
+    - cleanup_flatpak_info.rc == 0
+    - cleanup_app.fallback is defined
+    - cleanup_app.fallback.tarball is defined
+    - cleanup_app.fallback.installed_dir is defined
