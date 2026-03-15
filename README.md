@@ -107,7 +107,7 @@ Revise [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/gro
 - `git_user_name`
 - `git_user_email`
 - `chezmoi_repo` se quiser usar um repo remoto de dotfiles
-- `projects_repos` se quiser mudar os repositorios clonados
+- `projects_repos` se quiser definir uma lista global de repositorios clonados
 
 `dev_user` e `dev_home` sao resolvidos automaticamente a partir do usuario que executa o playbook.
 
@@ -285,6 +285,6 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -vv 2>&1 | tee ansi
 
 ## Observacoes finais
 
-- O projeto pode conter exemplos reais em `projects_repos`; revise isso antes de publicar o repositorio.
+- O perfil [personal.yml](/home/fernando/projects/vib/personal-workstation/profiles/personal.yml) concentra a lista pessoal de `projects_repos`.
 - Alguns componentes dependem de rede externa e repositorios de terceiros.
 - O provisionamento tenta limpar legados comuns do proprio projeto, mas uma maquina muito alterada pode exigir ajuste pontual.

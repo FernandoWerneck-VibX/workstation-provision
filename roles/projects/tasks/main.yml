@@ -8,7 +8,7 @@
 
 - name: Avisar quando lista de projetos estiver vazia
   debug:
-    msg: "Nenhum repositorio em projects_repos. Defina em group_vars/all.yml se quiser clonagem automatica."
+    msg: "Nenhum repositorio em projects_repos. Defina no perfil ativo ou em group_vars/all.yml se quiser clonagem automatica."
   when: projects_repos | length == 0
 
 - name: Garantir subpastas dos projetos

@@ -3,3 +3,49 @@
 syncthing_enable: true
 gdrive_enable: true
 projects_enable: true
+projects_repos:
+  - name: backoffice-api
+    path: "vib/backoffice-api"
+    url: "git@github.com:Vibxtech/backoffice-api.git"
+  - name: backoffice-front
+    path: "vib/backoffice-front"
+    url: "git@github.com:Vibxtech/backoffice-front.git"
+  - name: checkout-front
+    path: "vib/checkout-front"
+    url: "git@github.com:Vibxtech/checkout-front.git"
+  - name: marketplace-api
+    path: "vib/marketplace-api"
+    url: "git@github.com:Vibxtech/marketplace-api.git"
+  - name: marketplace-front
+    path: "vib/marketplace-front"
+    url: "git@github.com:Vibxtech/marketplace-front.git"
+  - name: platform-api
+    path: "vib/platform-api"
+    url: "git@github.com:Vibxtech/platform-api.git"
+  - name: platform-front
+    path: "vib/platform-front"
+    url: "git@github.com:Vibxtech/platform-front.git"
+  - name: pyrogram
+    path: "vib/pyrogram"
+    url: "git@github.com:FernandoWerneck-VibX/pyrogram.git"
+  - name: report-api
+    path: "vib/report-api"
+    url: "git@github.com:Vibxtech/report-api.git"
+  - name: telegram-bot
+    path: "vib/telegram-bot"
+    url: "git@github.com:Vibxtech/telegram-bot.git"
+  - name: tgcf
+    path: "vib/tgcf"
+    url: "https://github.com/aahnik/tgcf.git"
+  - name: vibx-analytics-monorepo
+    path: "vib/vibx-analytics-monorepo"
+    url: "git@github.com:Vibxtech/vibx-analytics-admin.git"
+  - name: vibx-customer-service
+    path: "vib/vibx-customer-service"
+    url: "git@github.com:Vibxtech/vibx-customer-service.git"
+  - name: workstation-monitor
+    path: "vib/workstation-monitor"
+    url: "git@github.com:Vibxtech/workstation-monitor.git"
+  - name: market-analysis-data
+    path: "personal/market-analysis-data"
+    url: "git@github.com:FernandoWerneck/market-analysis-data.git"
