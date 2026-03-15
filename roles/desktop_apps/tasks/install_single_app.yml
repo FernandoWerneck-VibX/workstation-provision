@@ -103,11 +103,34 @@
             path: "{{ apt_key_tmp.path }}"
             state: absent
 
+        - name: Remover sources apt legados
+          when: desktop_app.fallback.apt_source_legacy_paths is defined
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop: "{{ desktop_app.fallback.apt_source_legacy_paths }}"
+
+        - name: Adicionar source apt em formato deb822
+          when:
+            - desktop_app.fallback.apt_source_content is defined
+            - desktop_app.fallback.apt_source_dest is defined
+          copy:
+            dest: "{{ desktop_app.fallback.apt_source_dest }}"
+            content: "{{ desktop_app.fallback.apt_source_content }}"
+            mode: "0644"
+
         - name: Adicionar repo apt
-          when: desktop_app.fallback.apt_repo is defined
+          when:
+            - desktop_app.fallback.apt_repo is defined
+            - desktop_app.fallback.apt_source_content is not defined
           apt_repository:
             repo: "{{ desktop_app.fallback.apt_repo }}"
             filename: "fallback-{{ desktop_app.id | replace('.', '-') }}"
+            update_cache: yes
+
+        - name: Atualizar cache do apt para source manual
+          when: desktop_app.fallback.apt_source_content is defined
+          apt:
             update_cache: yes
 
         - name: Instalar pacote apt
