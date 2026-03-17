@@ -3,6 +3,9 @@
 syncthing_enable: true
 gdrive_enable: true
 projects_enable: true
+common_install_gcalendar: true
+cinnamon_enable_dynamic_wallpaper: true
+cinnamon_enable_google_calendar_desklet: true
 projects_repos:
   - name: backoffice-api
     path: "vib/backoffice-api"

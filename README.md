@@ -31,6 +31,7 @@ Objetivo: pegar uma maquina nova e sair com sistema, shell, ferramentas de desen
 - `bash-git-prompt`
 - `ble.sh`
 - `atuin`
+- `gcalendar` no perfil pessoal
 - `pay-respects`
 - completions e integracoes do Git
 - aliases via `chezmoi/dot_bash_aliases`
@@ -81,6 +82,8 @@ Observacoes:
 
 - Syncthing
 - Google Drive via `rclone`
+- Google Calendar desklet no perfil pessoal
+- Cinnamon Dynamic Wallpaper no perfil pessoal
 - aplicacao de dotfiles via `chezmoi`
 - clonagem automatica de projetos Git
 

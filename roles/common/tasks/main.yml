@@ -79,6 +79,19 @@
       - systemd-zram-generator
       - kazam
 
+- name: Adicionar PPA do gcalendar
+  apt_repository:
+    repo: "{{ common_gcalendar_ppa }}"
+    state: present
+    update_cache: yes
+  when: common_install_gcalendar | bool
+
+- name: Instalar gcalendar
+  apt:
+    name: gcalendar
+    state: present
+  when: common_install_gcalendar | bool
+
 - name: Instalar stack de energia para notebook
   apt:
     name:

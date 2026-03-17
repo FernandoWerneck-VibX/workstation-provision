@@ -4,6 +4,8 @@ common_enable_tlp: true
 common_tlp_notebook_only: true
 common_enable_tlp_pd: true
 common_power_supply_path: "/sys/class/power_supply"
+common_install_gcalendar: false
+common_gcalendar_ppa: "ppa:slgobinath/gcalendar"
 common_apt_preclean_paths:
   - "/etc/apt/sources.list.d/fallback-com-visualstudio-code.list"
   - "/etc/apt/sources.list.d/vscode.list"

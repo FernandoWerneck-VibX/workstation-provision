@@ -1,104 +1,211 @@
 ---
+- name: Definir extensoes e desklets desejados do Cinnamon
+  set_fact:
+    cinnamon_extensions_requested: >-
+      {{
+        ([] +
+        ([cinnamon_gtile_extension_id] if cinnamon_enable_gtile | bool else []) +
+        ([cinnamon_dynamic_wallpaper_extension_id] if cinnamon_enable_dynamic_wallpaper | bool else []))
+      }}
+    cinnamon_desklets_requested: >-
+      {{
+        [] +
+        ([{
+          'id': cinnamon_google_calendar_desklet_id,
+          'instance': cinnamon_google_calendar_desklet_instance,
+          'x': cinnamon_google_calendar_desklet_x,
+          'y': cinnamon_google_calendar_desklet_y
+        }] if cinnamon_enable_google_calendar_desklet | bool else [])
+      }}
+
 - name: Verificar suporte do gsettings para extensoes do Cinnamon
   command: gsettings writable org.cinnamon enabled-extensions
   register: cinnamon_extensions_writable
   changed_when: false
   failed_when: false
-  when: cinnamon_enable_gtile | bool
+  when: cinnamon_extensions_requested | length > 0
 
-- name: Garantir diretorio de extensoes do Cinnamon
+- name: Verificar suporte do gsettings para desklets do Cinnamon
+  command: gsettings writable org.cinnamon enabled-desklets
+  register: cinnamon_desklets_writable
+  changed_when: false
+  failed_when: false
+  when: cinnamon_desklets_requested | length > 0
+
+- name: Garantir diretorios do Cinnamon
   file:
-    path: "{{ dev_home }}/.local/share/cinnamon/extensions"
+    path: "{{ item.path }}"
     state: directory
     owner: "{{ dev_user }}"
     group: "{{ dev_user }}"
     mode: "0755"
-  when: cinnamon_enable_gtile | bool
+  loop:
+    - path: "{{ dev_home }}/.local/src"
+    - path: "{{ dev_home }}/.local/share/cinnamon/extensions"
+    - path: "{{ dev_home }}/.local/share/cinnamon/desklets"
+  when: (cinnamon_extensions_requested | length > 0) or (cinnamon_desklets_requested | length > 0)
 
-- name: Garantir cache local de fontes do Cinnamon Spices
-  file:
-    path: "{{ dev_home }}/.local/src"
-    state: directory
-    owner: "{{ dev_user }}"
-    group: "{{ dev_user }}"
-    mode: "0755"
-  when: cinnamon_enable_gtile | bool
-
-- name: Baixar Cinnamon Spices
+- name: Baixar Cinnamon Spices Extensions
   become_user: "{{ dev_user }}"
   git:
-    repo: "{{ cinnamon_gtile_repo }}"
+    repo: "{{ cinnamon_spices_extensions_repo }}"
     dest: "{{ dev_home }}/.local/src/cinnamon-spices-extensions"
-    version: "{{ cinnamon_gtile_repo_version }}"
+    version: "{{ cinnamon_spices_extensions_repo_version }}"
     update: yes
     depth: 1
   environment:
     GIT_TERMINAL_PROMPT: "0"
     GIT_ASKPASS: /bin/true
-  register: cinnamon_spices_repo
   when:
-    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_requested | length > 0
     - cinnamon_extensions_writable.rc == 0
     - cinnamon_extensions_writable.stdout | trim == "true"
 
-- name: Remover instalacao anterior incorreta do gTile
+- name: Recriar diretorios das extensoes desejadas
   file:
-    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}"
+    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ item }}"
     state: absent
+  loop: "{{ cinnamon_extensions_requested }}"
   when:
-    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_requested | length > 0
     - cinnamon_extensions_writable.rc == 0
     - cinnamon_extensions_writable.stdout | trim == "true"
 
-- name: Recriar diretorio do gTile
+- name: Garantir diretorios das extensoes desejadas
   file:
-    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}"
+    path: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ item }}"
     state: directory
     owner: "{{ dev_user }}"
     group: "{{ dev_user }}"
     mode: "0755"
+  loop: "{{ cinnamon_extensions_requested }}"
   when:
-    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_requested | length > 0
     - cinnamon_extensions_writable.rc == 0
     - cinnamon_extensions_writable.stdout | trim == "true"
 
-- name: Instalar gTile a partir do pacote oficial do Cinnamon Spices
+- name: Instalar extensoes do Cinnamon a partir do pacote oficial Spices
   copy:
-    src: "{{ dev_home }}/.local/src/cinnamon-spices-extensions/{{ cinnamon_gtile_extension_id }}/files/{{ cinnamon_gtile_extension_id }}/"
-    dest: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ cinnamon_gtile_extension_id }}/"
+    src: "{{ dev_home }}/.local/src/cinnamon-spices-extensions/{{ item }}/files/{{ item }}/"
+    dest: "{{ dev_home }}/.local/share/cinnamon/extensions/{{ item }}/"
     owner: "{{ dev_user }}"
     group: "{{ dev_user }}"
     mode: preserve
     remote_src: yes
+  loop: "{{ cinnamon_extensions_requested }}"
   when:
-    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_requested | length > 0
     - cinnamon_extensions_writable.rc == 0
     - cinnamon_extensions_writable.stdout | trim == "true"
 
-- name: Habilitar gTile no Cinnamon
+- name: Habilitar extensoes do Cinnamon
   become_user: "{{ dev_user }}"
   shell: |
     set -euo pipefail
     exts="$(gsettings get org.cinnamon enabled-extensions)"
 
-    if echo "$exts" | grep -q "'{{ cinnamon_gtile_extension_id }}'"; then
+    if echo "$exts" | grep -q "'{{ item }}'"; then
       echo "already-enabled"
       exit 0
     fi
 
     if [ "$exts" = "@as []" ] || [ "$exts" = "[]" ]; then
-      gsettings set org.cinnamon enabled-extensions "['{{ cinnamon_gtile_extension_id }}']"
+      gsettings set org.cinnamon enabled-extensions "['{{ item }}']"
     else
-      gsettings set org.cinnamon enabled-extensions "${exts%]}, '{{ cinnamon_gtile_extension_id }}']"
+      gsettings set org.cinnamon enabled-extensions "${exts%]}, '{{ item }}']"
     fi
 
     echo "enabled"
   args:
     executable: /bin/bash
-  register: gtile_enable_result
-  changed_when: "'enabled' in gtile_enable_result.stdout"
+  register: cinnamon_extension_enable_result
+  changed_when: "'enabled' in stdout"
   failed_when: false
+  loop: "{{ cinnamon_extensions_requested }}"
   when:
-    - cinnamon_enable_gtile | bool
+    - cinnamon_extensions_requested | length > 0
     - cinnamon_extensions_writable.rc == 0
     - cinnamon_extensions_writable.stdout | trim == "true"
+
+- name: Baixar Cinnamon Spices Desklets
+  become_user: "{{ dev_user }}"
+  git:
+    repo: "{{ cinnamon_spices_desklets_repo }}"
+    dest: "{{ dev_home }}/.local/src/cinnamon-spices-desklets"
+    version: "{{ cinnamon_spices_desklets_repo_version }}"
+    update: yes
+    depth: 1
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_ASKPASS: /bin/true
+  when:
+    - cinnamon_desklets_requested | length > 0
+    - cinnamon_desklets_writable.rc == 0
+    - cinnamon_desklets_writable.stdout | trim == "true"
+
+- name: Recriar diretorios dos desklets desejados
+  file:
+    path: "{{ dev_home }}/.local/share/cinnamon/desklets/{{ item.id }}"
+    state: absent
+  loop: "{{ cinnamon_desklets_requested }}"
+  when:
+    - cinnamon_desklets_requested | length > 0
+    - cinnamon_desklets_writable.rc == 0
+    - cinnamon_desklets_writable.stdout | trim == "true"
+
+- name: Garantir diretorios dos desklets desejados
+  file:
+    path: "{{ dev_home }}/.local/share/cinnamon/desklets/{{ item.id }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  loop: "{{ cinnamon_desklets_requested }}"
+  when:
+    - cinnamon_desklets_requested | length > 0
+    - cinnamon_desklets_writable.rc == 0
+    - cinnamon_desklets_writable.stdout | trim == "true"
+
+- name: Instalar desklets do Cinnamon a partir do pacote oficial Spices
+  copy:
+    src: "{{ dev_home }}/.local/src/cinnamon-spices-desklets/{{ item.id }}/files/{{ item.id }}/"
+    dest: "{{ dev_home }}/.local/share/cinnamon/desklets/{{ item.id }}/"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: preserve
+    remote_src: yes
+  loop: "{{ cinnamon_desklets_requested }}"
+  when:
+    - cinnamon_desklets_requested | length > 0
+    - cinnamon_desklets_writable.rc == 0
+    - cinnamon_desklets_writable.stdout | trim == "true"
+
+- name: Habilitar desklets do Cinnamon
+  become_user: "{{ dev_user }}"
+  shell: |
+    set -euo pipefail
+    desklets="$(gsettings get org.cinnamon enabled-desklets)"
+    entry="{{ item.id }}:{{ item.instance }}:{{ item.x }}:{{ item.y }}"
+
+    if echo "$desklets" | grep -q "'${entry}'"; then
+      echo "already-enabled"
+      exit 0
+    fi
+
+    if [ "$desklets" = "@as []" ] || [ "$desklets" = "[]" ]; then
+      gsettings set org.cinnamon enabled-desklets "['${entry}']"
+    else
+      gsettings set org.cinnamon enabled-desklets "${desklets%]}, '${entry}']"
+    fi
+
+    echo "enabled"
+  args:
+    executable: /bin/bash
+  register: cinnamon_desklet_enable_result
+  changed_when: "'enabled' in stdout"
+  failed_when: false
+  loop: "{{ cinnamon_desklets_requested }}"
+  when:
+    - cinnamon_desklets_requested | length > 0
+    - cinnamon_desklets_writable.rc == 0
+    - cinnamon_desklets_writable.stdout | trim == "true"

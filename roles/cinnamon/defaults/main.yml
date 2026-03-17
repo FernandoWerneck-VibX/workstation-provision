@@ -1,5 +1,14 @@
 ---
 cinnamon_enable_gtile: true
-cinnamon_gtile_repo: "https://github.com/linuxmint/cinnamon-spices-extensions.git"
-cinnamon_gtile_repo_version: "master"
+cinnamon_enable_dynamic_wallpaper: false
+cinnamon_enable_google_calendar_desklet: false
+cinnamon_spices_extensions_repo: "https://github.com/linuxmint/cinnamon-spices-extensions.git"
+cinnamon_spices_extensions_repo_version: "master"
+cinnamon_spices_desklets_repo: "https://github.com/linuxmint/cinnamon-spices-desklets.git"
+cinnamon_spices_desklets_repo_version: "master"
 cinnamon_gtile_extension_id: "gTile@shuairan"
+cinnamon_dynamic_wallpaper_extension_id: "cinnamon-dynamic-wallpaper@TobiZog"
+cinnamon_google_calendar_desklet_id: "googleCalendar@javahelps.com"
+cinnamon_google_calendar_desklet_instance: 0
+cinnamon_google_calendar_desklet_x: 100
+cinnamon_google_calendar_desklet_y: 100
