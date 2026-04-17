@@ -79,18 +79,61 @@
       - systemd-zram-generator
       - kazam
 
-- name: Adicionar PPA do gcalendar
-  apt_repository:
-    repo: "{{ common_gcalendar_ppa }}"
-    state: present
-    update_cache: yes
+- name: Instalar gcalendar com fallback para uv
   when: common_install_gcalendar | bool
+  block:
+    - name: Adicionar PPA do gcalendar
+      apt_repository:
+        repo: "{{ common_gcalendar_ppa }}"
+        state: present
+        update_cache: yes
 
-- name: Instalar gcalendar
-  apt:
-    name: gcalendar
-    state: present
-  when: common_install_gcalendar | bool
+    - name: Instalar gcalendar via apt
+      apt:
+        name: gcalendar
+        state: present
+  rescue:
+    - name: Remover PPA do gcalendar apos falha no apt
+      apt_repository:
+        repo: "{{ common_gcalendar_ppa }}"
+        state: absent
+        update_cache: yes
+      failed_when: false
+
+    - name: Verificar uv instalado para fallback do gcalendar
+      stat:
+        path: "{{ dev_home }}/.local/bin/uv"
+      register: common_gcalendar_uv_bin
+
+    - name: Instalar uv para fallback do gcalendar
+      become_user: "{{ dev_user }}"
+      shell: curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        executable: /bin/bash
+      environment:
+        UV_INSTALL_DIR: "{{ dev_home }}/.local/bin"
+        UV_NO_MODIFY_PATH: "1"
+      when: not common_gcalendar_uv_bin.stat.exists
+
+    - name: Verificar gcalendar instalado via uv
+      stat:
+        path: "{{ dev_home }}/.local/bin/gcalendar"
+      register: common_gcalendar_uv_shim
+
+    - name: Instalar gcalendar via uv
+      become_user: "{{ dev_user }}"
+      shell: |
+        set -euo pipefail
+        export PATH="{{ dev_home }}/.local/bin:$PATH"
+        uv tool install gcalendar
+      args:
+        executable: /bin/bash
+      when: not common_gcalendar_uv_shim.stat.exists
+
+    - name: Validar gcalendar instalado via uv
+      become_user: "{{ dev_user }}"
+      command: "{{ dev_home }}/.local/bin/gcalendar --version"
+      changed_when: false
 
 - name: Instalar stack de energia para notebook
   apt:

@@ -31,7 +31,7 @@ Objetivo: pegar uma maquina nova e sair com sistema, shell, ferramentas de desen
 - `bash-git-prompt`
 - `ble.sh`
 - `atuin`
-- `gcalendar` no perfil pessoal
+- `gcalendar` no perfil pessoal com fallback para `uv tool install`
 - `pay-respects`
 - completions e integracoes do Git
 - aliases via `chezmoi/dot_bash_aliases`
