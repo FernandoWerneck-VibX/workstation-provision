@@ -1,0 +1,20 @@
+# Projects
+
+Diretorio base: `{{ projects_dir }}`
+
+{% if projects_enable | default(true) | bool and projects_repos | length > 0 %}
+{% for repo in projects_repos %}
+## {{ repo.name }}
+
+- caminho: `{{ projects_dir }}/{{ repo.path | default(repo.name) }}`
+- origem: `{{ repo.url }}`
+- stack: `{{ repo.stack | default('nao informado') }}`
+- perfil IA: `{{ repo.ai_profile | default('generic') }}`
+- validacao: `{{ repo.validate | default('ver README ou Makefile') }}`
+- AI readiness pack: `{% if repo.ai_ready | default(ai_assistant_project_pack_enable) | bool %}habilitado{% else %}desabilitado{% endif %}`
+
+{% endfor %}
+{% else %}
+Nenhum repositorio configurado para clonagem automatica.
+{% endif %}
+

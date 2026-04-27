@@ -1,0 +1,49 @@
+# Workflows
+
+## Provisionamento
+
+```bash
+cd {{ playbook_dir }}
+make check
+make lint
+make dry-run PROFILE=personal.yml
+```
+
+## Execucao
+
+```bash
+cd {{ playbook_dir }}
+./bootstrap.sh personal.yml
+ansible-playbook -i inventory.ini site.yml --ask-become-pass
+```
+
+## Validacao Rapida
+
+```bash
+cat ~/WORKSTATION_ONBOARDING.md
+docker version
+docker compose version
+flatpak remotes
+apt-cache policy snapd
+```
+
+## Manutencao
+
+```bash
+{{ playbook_dir }}/utils-scripts/system/update-system.sh
+{{ playbook_dir }}/utils-scripts/system/check-env.sh
+{{ playbook_dir }}/utils-scripts/git/sync-projects.sh
+```
+
+## Projetos
+
+Projetos ficam normalmente em `{{ projects_dir }}`. Ao entrar em um projeto,
+procure primeiro por estes arquivos:
+
+- `AGENTS.md`
+- `README.md`
+- `Makefile`
+- `package.json`
+- `pom.xml`
+- `pyproject.toml`
+

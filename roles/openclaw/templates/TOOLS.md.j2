@@ -5,7 +5,10 @@ Convencoes locais uteis:
 - use `rg` para buscar texto e `rg --files` para listar arquivos
 - repositorios de trabalho costumam ficar em `{{ openclaw_projects_hint_path }}`
 - este ambiente usa Ansible para provisionamento da maquina
+- contexto local para agentes costuma ficar em `{{ dev_home }}/.ai-assistant`
+- skills locais costumam ficar em `{{ dev_home }}/.ai-assistant/skills`
 
 Guardrails:
 - mantenha escrita de arquivos restrita ao workspace por padrao
 - alteracoes em repositorios reais devem ser intencionais e explicadas
+- antes de alterar projetos clonados, verifique `git status --short`

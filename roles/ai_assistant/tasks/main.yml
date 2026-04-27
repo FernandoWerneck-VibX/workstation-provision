@@ -1,0 +1,106 @@
+---
+- name: Garantir diretorios do contexto de IA
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  loop:
+    - "{{ ai_assistant_home }}"
+    - "{{ ai_assistant_home }}/skills"
+    - "{{ ai_assistant_home }}/repo-context"
+
+- name: Instalar contexto principal para agentes
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ ai_assistant_home }}/{{ item.dest }}"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+  loop:
+    - src: AGENTS.md.j2
+      dest: AGENTS.md
+    - src: WORKFLOWS.md.j2
+      dest: WORKFLOWS.md
+    - src: SAFETY.md.j2
+      dest: SAFETY.md
+    - src: PROJECTS.md.j2
+      dest: PROJECTS.md
+    - src: SKILLS.md.j2
+      dest: SKILLS.md
+
+- name: Copiar AGENTS.md deste repositorio como referencia
+  copy:
+    src: "{{ ai_assistant_repo_context_source }}"
+    dest: "{{ ai_assistant_home }}/repo-context/workstation-provision-AGENTS.md"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+
+- name: Verificar skills versionadas no repositorio
+  stat:
+    path: "{{ ai_assistant_skills_source }}"
+  register: ai_assistant_skills_stat
+
+- name: Copiar skills versionadas para o contexto local
+  copy:
+    src: "{{ ai_assistant_skills_source }}/"
+    dest: "{{ ai_assistant_home }}/skills/"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: preserve
+    directory_mode: "0755"
+  when: ai_assistant_skills_stat.stat.exists
+
+- name: Garantir diretorio de skills do Codex
+  file:
+    path: "{{ ai_assistant_codex_skills_dir }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  when: ai_assistant_install_codex_skills | bool
+
+- name: Instalar skills versionadas para descoberta do Codex
+  copy:
+    src: "{{ ai_assistant_skills_source }}/"
+    dest: "{{ ai_assistant_codex_skills_dir }}/"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: preserve
+    directory_mode: "0755"
+    force: "{{ ai_assistant_codex_skills_force | bool }}"
+  when:
+    - ai_assistant_install_codex_skills | bool
+    - ai_assistant_skills_stat.stat.exists
+
+- name: Verificar workspace do OpenClaw
+  stat:
+    path: "{{ openclaw_workspace_dir | default(ai_assistant_home ~ '/missing-openclaw-workspace') }}"
+  register: ai_assistant_openclaw_workspace_stat
+  when:
+    - ai_assistant_seed_openclaw_workspace | bool
+    - openclaw_workspace_dir is defined
+
+- name: Publicar contexto complementar no workspace do OpenClaw
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ openclaw_workspace_dir }}/{{ item }}"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+  loop:
+    - WORKFLOWS.md
+    - SAFETY.md
+    - PROJECTS.md
+    - SKILLS.md
+  when:
+    - ai_assistant_seed_openclaw_workspace | bool
+    - ai_assistant_openclaw_workspace_stat.stat.exists | default(false)
+
+- name: Preparar projetos clonados para uso com IA
+  include_tasks: project_pack.yml
+  when:
+    - projects_enable | default(true) | bool
+    - projects_repos | length > 0

@@ -1,0 +1,17 @@
+# Copilot Instructions
+
+Este repositorio fica em uma workstation provisionada por Ansible.
+
+Siga estas regras:
+
+- respeite os padroes do projeto atual
+- preserve mudancas locais
+- nao adicione secrets
+- use validacao declarada no projeto
+- mantenha alteracoes pequenas e relacionadas ao pedido
+
+Contexto conhecido:
+
+- stack: `{{ item.0.stack | default('nao informado') }}`
+- validacao: `{{ item.0.validate | default('ver README ou Makefile') }}`
+

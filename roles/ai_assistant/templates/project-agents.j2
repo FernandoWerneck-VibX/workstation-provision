@@ -1,0 +1,21 @@
+# {{ item.0.name }}
+
+Este arquivo foi semeado pelo provisionamento da workstation para orientar
+agentes de programacao neste repositorio.
+
+## Contexto
+
+- caminho local: `{{ projects_dir }}/{{ item.0.path | default(item.0.name) }}`
+- origem: `{{ item.0.url }}`
+- stack: `{{ item.0.stack | default('nao informado') }}`
+- perfil IA: `{{ item.0.ai_profile | default('generic') }}`
+- validacao: `{{ item.0.validate | default('ver README ou Makefile') }}`
+
+## Regras
+
+- Leia o README antes de alterar codigo.
+- Preserve mudancas locais existentes.
+- Use os comandos de validacao do projeto antes de concluir.
+- Nao adicione secrets, tokens ou credenciais.
+- Prefira mudancas pequenas, testaveis e alinhadas ao padrao local.
+

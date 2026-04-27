@@ -3,6 +3,8 @@
 Provisionamento de workstation para Linux Mint 22.x (Cinnamon) com Ansible.
 
 Objetivo: pegar uma maquina nova e sair com sistema, shell, ferramentas de desenvolvimento, apps desktop e servicos opcionais prontos, com suporte a perfis pessoal e colaborador.
+O projeto tambem prepara contexto local para uso de agentes de IA no auxilio a
+programacao.
 
 ## Escopo
 
@@ -34,6 +36,8 @@ Objetivo: pegar uma maquina nova e sair com sistema, shell, ferramentas de desen
 - `gcalendar` no perfil pessoal com fallback para `uv tool install`
 - `pay-respects`
 - OpenClaw como assistente pessoal local (`gateway` + dashboard + workspace dedicado)
+- contexto local para agentes de IA em `~/.ai-assistant`
+- skills locais para rotinas recorrentes de desenvolvimento e provisionamento
 - completions e integracoes do Git
 - aliases via `chezmoi/dot_bash_aliases`
 
@@ -56,7 +60,7 @@ Objetivo: pegar uma maquina nova e sair com sistema, shell, ferramentas de desen
 
 ### Apps desktop
 
-Catalogo atual em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects/vib/personal-workstation/roles/desktop_apps/defaults/main.yml):
+Catalogo atual em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects/vib/workstation-provision/roles/desktop_apps/defaults/main.yml):
 
 - Chrome
 - Firefox
@@ -84,6 +88,7 @@ Observacoes:
 - Syncthing
 - Google Drive via `rclone`
 - OpenClaw como assistente pessoal local
+- AI assistant context independente de ferramenta (`~/.ai-assistant`)
 - Google Calendar desklet no perfil pessoal
 - Cinnamon Dynamic Wallpaper no perfil pessoal
 - aplicacao de dotfiles via `chezmoi`
@@ -93,8 +98,8 @@ Observacoes:
 
 Perfis disponiveis:
 
-- [profiles/personal.yml](/home/fernando/projects/vib/personal-workstation/profiles/personal.yml): mantem Syncthing, Google Drive, OpenClaw e clonagem de projetos ativos
-- [profiles/collaborator.yml](/home/fernando/projects/vib/personal-workstation/profiles/collaborator.yml): desativa recursos pessoais
+- [profiles/personal.yml](/home/fernando/projects/vib/workstation-provision/profiles/personal.yml): mantem Syncthing, Google Drive, OpenClaw e clonagem de projetos ativos
+- [profiles/collaborator.yml](/home/fernando/projects/vib/workstation-provision/profiles/collaborator.yml): desativa recursos pessoais
 
 ## Como executar
 
@@ -102,12 +107,12 @@ Perfis disponiveis:
 
 ```bash
 git clone <repo>
-cd personal-workstation
+cd workstation-provision
 ```
 
 ### 2. Ajustar variaveis obrigatorias
 
-Revise [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/group_vars/all.yml):
+Revise [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml):
 
 - `git_user_name`
 - `git_user_email`
@@ -144,7 +149,7 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -e @profiles/person
 ansible-playbook -i inventory.ini site.yml --ask-become-pass -e @profiles/collaborator.yml
 ```
 
-O inventario local esta em [inventory.ini](/home/fernando/projects/vib/personal-workstation/inventory.ini) e fixa o interpretador em `/usr/bin/python3` para nao depender de `pyenv` ou ferramentas do usuario.
+O inventario local esta em [inventory.ini](/home/fernando/projects/vib/workstation-provision/inventory.ini) e fixa o interpretador em `/usr/bin/python3` para nao depender de `pyenv` ou ferramentas do usuario.
 
 ## Integracoes que exigem passo manual
 
@@ -208,6 +213,57 @@ Na primeira abertura do dashboard:
 - revisar o workspace em `~/.openclaw/workspace`
 - opcionalmente conectar canais externos apenas se voce realmente quiser um assistente sempre acessivel fora da UI local
 
+### Contexto de IA e vibe coding
+
+Valido quando `ai_assistant_enable: true`.
+
+O playbook prepara:
+
+- `~/.ai-assistant/AGENTS.md` com regras gerais para agentes
+- `~/.ai-assistant/WORKFLOWS.md` com comandos recorrentes
+- `~/.ai-assistant/SAFETY.md` com guardrails
+- `~/.ai-assistant/PROJECTS.md` com inventario dos repositorios conhecidos
+- `~/.ai-assistant/SKILLS.md` com indice das skills locais
+- `~/.ai-assistant/skills` com skills versionadas deste projeto
+- `~/.codex/skills` com copia das skills para descoberta do Codex
+
+O repositorio tambem possui:
+
+- [AGENTS.md](/home/fernando/projects/vib/workstation-provision/AGENTS.md)
+- [docs/ARCHITECTURE.md](/home/fernando/projects/vib/workstation-provision/docs/ARCHITECTURE.md)
+- `.codex/skills/` com workflows especializados
+- `.github/copilot-instructions.md` para GitHub Copilot
+- `.cursor/rules/` para Cursor
+- `.editorconfig` para convencoes de edicao
+
+Opcionalmente, o role pode semear nos projetos clonados:
+
+- `AGENTS.md`
+- `.github/copilot-instructions.md`
+- `.cursor/rules/ai-readiness.mdc`
+
+Por seguranca, isso fica desabilitado por padrao. Para habilitar globalmente:
+
+```yaml
+ai_assistant_project_pack_enable: true
+```
+
+Ou por repositorio:
+
+```yaml
+projects_repos:
+  - name: platform-api
+    path: "vib/platform-api"
+    url: "git@github.com:Vibxtech/platform-api.git"
+    stack: "java-maven"
+    ai_profile: "backend-service"
+    validate: "mvn test"
+    ai_ready: true
+```
+
+Os arquivos sao criados com `force: false` por padrao para nao sobrescrever
+orientacoes ja existentes nos repositorios.
+
 ## Dotfiles
 
 O role de shell instala `chezmoi` e pode aplicar dotfiles de duas formas:
@@ -221,13 +277,14 @@ No estado atual, o conteudo versionado em `chezmoi/` e aplicado automaticamente 
 
 Pontos mais comuns de personalizacao:
 
-- versoes de linguagens em [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/group_vars/all.yml)
-- habilitacao do OpenClaw em [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/group_vars/all.yml) e [roles/openclaw/defaults/main.yml](/home/fernando/projects/vib/personal-workstation/roles/openclaw/defaults/main.yml)
-- apps desktop em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects/vib/personal-workstation/roles/desktop_apps/defaults/main.yml)
-- apps removidos ao final em [roles/cleanup_apps/defaults/main.yml](/home/fernando/projects/vib/personal-workstation/roles/cleanup_apps/defaults/main.yml)
-- configuracao de shell em [roles/shell/tasks/main.yml](/home/fernando/projects/vib/personal-workstation/roles/shell/tasks/main.yml) e [roles/shell_env/tasks/main.yml](/home/fernando/projects/vib/personal-workstation/roles/shell_env/tasks/main.yml)
-- baseline do assistente em [roles/openclaw/templates/AGENTS.md.j2](/home/fernando/projects/vib/personal-workstation/roles/openclaw/templates/AGENTS.md.j2) e [roles/openclaw/templates/openclaw.json.j2](/home/fernando/projects/vib/personal-workstation/roles/openclaw/templates/openclaw.json.j2)
-- projetos clonados em [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/group_vars/all.yml)
+- versoes de linguagens em [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml)
+- habilitacao do OpenClaw em [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml) e [roles/openclaw/defaults/main.yml](/home/fernando/projects/vib/workstation-provision/roles/openclaw/defaults/main.yml)
+- habilitacao do contexto de IA em [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml) e [roles/ai_assistant/defaults/main.yml](/home/fernando/projects/vib/workstation-provision/roles/ai_assistant/defaults/main.yml)
+- apps desktop em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects/vib/workstation-provision/roles/desktop_apps/defaults/main.yml)
+- apps removidos ao final em [roles/cleanup_apps/defaults/main.yml](/home/fernando/projects/vib/workstation-provision/roles/cleanup_apps/defaults/main.yml)
+- configuracao de shell em [roles/shell/tasks/main.yml](/home/fernando/projects/vib/workstation-provision/roles/shell/tasks/main.yml) e [roles/shell_env/tasks/main.yml](/home/fernando/projects/vib/workstation-provision/roles/shell_env/tasks/main.yml)
+- baseline do assistente em [roles/openclaw/templates/AGENTS.md.j2](/home/fernando/projects/vib/workstation-provision/roles/openclaw/templates/AGENTS.md.j2) e [roles/openclaw/templates/openclaw.json.j2](/home/fernando/projects/vib/workstation-provision/roles/openclaw/templates/openclaw.json.j2)
+- projetos clonados em [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml)
 
 Exemplo de ajuste de perfil:
 
@@ -237,6 +294,9 @@ gdrive_enable: false
 openclaw_enable: false
 projects_enable: false
 projects_repos: []
+ai_assistant_enable: true
+ai_assistant_install_codex_skills: true
+ai_assistant_project_pack_enable: false
 ```
 
 Exemplo de ajuste de versoes:
@@ -249,18 +309,24 @@ java_version: "24-open"
 
 ## Validacao
 
-Atalhos disponiveis no [Makefile](/home/fernando/projects/vib/personal-workstation/Makefile):
+Atalhos disponiveis no [Makefile](/home/fernando/projects/vib/workstation-provision/Makefile):
 
 ```bash
 make install
 make install PROFILE=collaborator.yml
 make check
+make syntax
 make lint
+make lint-yaml
+make lint-ansible
+make dry-run PROFILE=personal.yml
+make verify
 ```
 
 Observacao:
 - `make check` exige `ansible-playbook` instalado no ambiente
 - `make lint` exige `pre-commit` instalado
+- `make dry-run` executa `ansible-playbook --check` e pode exigir sudo
 
 ## Troubleshooting rapido
 
@@ -283,6 +349,14 @@ docker compose version
 systemctl status openclaw-gateway --no-pager
 openclaw --version
 openclaw dashboard
+```
+
+### Verificar contexto de IA
+
+```bash
+ls ~/.ai-assistant
+cat ~/.ai-assistant/WORKFLOWS.md
+find ~/.ai-assistant/skills -maxdepth 2 -name SKILL.md
 ```
 
 ### Verificar apps desktop
@@ -309,8 +383,8 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -vv 2>&1 | tee ansi
 
 ## Estrutura do projeto
 
-- [site.yml](/home/fernando/projects/vib/personal-workstation/site.yml): playbook principal
-- [group_vars/all.yml](/home/fernando/projects/vib/personal-workstation/group_vars/all.yml): variaveis globais
+- [site.yml](/home/fernando/projects/vib/workstation-provision/site.yml): playbook principal
+- [group_vars/all.yml](/home/fernando/projects/vib/workstation-provision/group_vars/all.yml): variaveis globais
 - `profiles/`: overrides por tipo de maquina
 - `roles/common`: base do sistema
 - `roles/cinnamon`: ajustes de desktop Cinnamon
@@ -318,6 +392,7 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -vv 2>&1 | tee ansi
 - `roles/dev_tools`: linguagens e tooling de desenvolvimento
 - `roles/devops`: Docker e ferramentas de infraestrutura
 - `roles/openclaw`: assistente pessoal local com gateway, workspace e servico
+- `roles/ai_assistant`: contexto, skills e AI readiness pack opcional
 - `roles/desktop_apps`: catalogo de apps e fallbacks
 - `roles/projects`: clonagem de repositorios
 - `roles/syncthing`: sincronizacao entre maquinas
@@ -327,6 +402,6 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -vv 2>&1 | tee ansi
 
 ## Observacoes finais
 
-- O perfil [personal.yml](/home/fernando/projects/vib/personal-workstation/profiles/personal.yml) concentra a lista pessoal de `projects_repos`.
+- O perfil [personal.yml](/home/fernando/projects/vib/workstation-provision/profiles/personal.yml) concentra a lista pessoal de `projects_repos`.
 - Alguns componentes dependem de rede externa e repositorios de terceiros.
 - O provisionamento tenta limpar legados comuns do proprio projeto, mas uma maquina muito alterada pode exigir ajuste pontual.

@@ -1,0 +1,18 @@
+---
+ai_assistant_enable: true
+ai_assistant_home: "{{ dev_home }}/.ai-assistant"
+ai_assistant_skills_source: "{{ playbook_dir }}/.codex/skills"
+ai_assistant_repo_context_source: "{{ playbook_dir }}/AGENTS.md"
+ai_assistant_seed_openclaw_workspace: true
+ai_assistant_install_codex_skills: true
+ai_assistant_codex_skills_dir: "{{ dev_home }}/.codex/skills"
+ai_assistant_codex_skills_force: false
+ai_assistant_project_pack_enable: false
+ai_assistant_project_pack_force: false
+ai_assistant_project_pack_files:
+  - kind: agents
+    path: "AGENTS.md"
+  - kind: copilot
+    path: ".github/copilot-instructions.md"
+  - kind: cursor
+    path: ".cursor/rules/ai-readiness.mdc"

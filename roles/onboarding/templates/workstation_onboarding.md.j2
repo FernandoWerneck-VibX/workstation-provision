@@ -19,6 +19,7 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Syncthing: `{% if syncthing_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 - Google Drive (rclone): `{% if gdrive_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 - OpenClaw: `{% if openclaw_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
+- AI assistant context: `{% if ai_assistant_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 
 ## Apps Desktop Provisionados
 
@@ -43,6 +44,13 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 {% if openclaw_enable | default(true) | bool %}
 - OpenClaw (`openclaw-gateway`)
 - Workspace do assistente em `~/.openclaw/workspace`
+{% endif %}
+{% if ai_assistant_enable | default(true) | bool %}
+- Contexto de IA em `~/.ai-assistant`
+- Skills locais em `~/.ai-assistant/skills`
+{% if ai_assistant_install_codex_skills | default(true) | bool %}
+- Skills Codex em `~/.codex/skills`
+{% endif %}
 {% endif %}
 
 ## Repositorios de Projeto (clone automatico)
@@ -83,6 +91,15 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
    - `openclaw onboard` ou `openclaw configure` para autenticar o modelo
    - Revisar os arquivos de contexto em `~/.openclaw/workspace`
 {% endif %}
+{% if ai_assistant_enable | default(true) | bool %}
+- Revisar contexto de IA:
+   - `ls ~/.ai-assistant`
+   - `cat ~/.ai-assistant/WORKFLOWS.md`
+   - `find ~/.ai-assistant/skills -maxdepth 2 -name SKILL.md`
+{% if ai_assistant_install_codex_skills | default(true) | bool %}
+   - `find ~/.codex/skills -maxdepth 2 -name SKILL.md`
+{% endif %}
+{% endif %}
 - Validar Docker para usuario sem sudo:
    - Fazer logout/login apos provisionamento
 - Configurar contas nos apps:
@@ -102,6 +119,13 @@ systemctl status rclone-gdrive --no-pager
 {% if openclaw_enable | default(true) | bool %}
 systemctl status openclaw-gateway --no-pager
 openclaw --version
+{% endif %}
+{% if ai_assistant_enable | default(true) | bool %}
+test -f ~/.ai-assistant/AGENTS.md
+test -d ~/.ai-assistant/skills
+{% if ai_assistant_install_codex_skills | default(true) | bool %}
+test -d ~/.codex/skills
+{% endif %}
 {% endif %}
 docker version
 docker compose version

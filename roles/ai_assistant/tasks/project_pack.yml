@@ -1,0 +1,24 @@
+---
+- name: Garantir diretorios do AI readiness pack nos projetos
+  file:
+    path: "{{ projects_dir }}/{{ item.0.path | default(item.0.name) }}/{{ item.1.path | dirname }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+  loop: "{{ projects_repos | product(ai_assistant_project_pack_files) | list }}"
+  when:
+    - item.0.ai_ready | default(ai_assistant_project_pack_enable) | bool
+    - (item.1.path | dirname) != "."
+
+- name: Instalar AI readiness pack nos projetos
+  template:
+    src: "project-{{ item.1.kind }}.j2"
+    dest: "{{ projects_dir }}/{{ item.0.path | default(item.0.name) }}/{{ item.1.path }}"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+    force: "{{ ai_assistant_project_pack_force | bool }}"
+  loop: "{{ projects_repos | product(ai_assistant_project_pack_files) | list }}"
+  when: item.0.ai_ready | default(ai_assistant_project_pack_enable) | bool
+

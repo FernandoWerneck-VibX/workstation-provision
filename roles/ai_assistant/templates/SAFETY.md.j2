@@ -1,0 +1,26 @@
+# Safety
+
+## Regras
+
+- Nao leia nem altere chaves privadas sem pedido explicito.
+- Nao inclua secrets, tokens ou credenciais em commits.
+- Nao execute comandos destrutivos sem confirmacao clara.
+- Nao altere repositorios fora de `{{ projects_dir }}` sem autorizacao.
+- Para operacoes com `sudo`, explique o motivo antes de agir.
+- Preserve mudancas locais que nao foram feitas por voce.
+
+## Caminhos Sensiveis
+
+- `{{ dev_home }}/.ssh`
+- `{{ dev_home }}/.gnupg`
+- `{{ dev_home }}/.config/rclone`
+- `{{ dev_home }}/GoogleDrive/ssh`
+- arquivos `.env`, `.env.*`, `id_*`, `*.pem`, `*.key`
+
+## Git
+
+- Antes de editar, confira `git status --short`.
+- Nao use `git reset --hard` sem pedido explicito.
+- Nao reescreva historico sem pedido explicito.
+- Commits devem ser pequenos e relacionados ao pedido.
+

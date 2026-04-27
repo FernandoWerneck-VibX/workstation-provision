@@ -17,6 +17,8 @@ syncthing_enable: true
 gdrive_enable: true
 projects_enable: true
 openclaw_enable: true
+ai_assistant_enable: true
+ai_assistant_project_pack_enable: false
 syncthing_folders:
   - "{{ dev_home }}/Downloads"
 cinnamon_enable_gtile: true

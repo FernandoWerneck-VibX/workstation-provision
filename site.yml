@@ -14,6 +14,8 @@
     - desktop_apps
     - role: projects
       when: projects_enable | default(true) | bool
+    - role: ai_assistant
+      when: ai_assistant_enable | default(true) | bool
     - role: syncthing
       when: syncthing_enable | default(true) | bool
     - role: gdrive

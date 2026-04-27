@@ -119,7 +119,7 @@
   args:
     executable: /bin/bash
   register: cinnamon_extension_enable_result
-  changed_when: "'enabled' in stdout"
+  changed_when: (cinnamon_extension_enable_result.stdout | default('') | trim) == "enabled"
   failed_when: false
   loop: "{{ cinnamon_extensions_requested }}"
   when:
@@ -202,7 +202,7 @@
   args:
     executable: /bin/bash
   register: cinnamon_desklet_enable_result
-  changed_when: "'enabled' in stdout"
+  changed_when: (cinnamon_desklet_enable_result.stdout | default('') | trim) == "enabled"
   failed_when: false
   loop: "{{ cinnamon_desklets_requested }}"
   when:

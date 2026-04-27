@@ -1,0 +1,29 @@
+# Skills
+
+Skills locais ficam em:
+
+```bash
+{{ ai_assistant_home }}/skills
+```
+
+{% if ai_assistant_install_codex_skills | bool %}
+Skills para descoberta do Codex tambem sao instaladas em:
+
+```bash
+{{ ai_assistant_codex_skills_dir }}
+```
+{% endif %}
+
+Skills versionadas por este projeto:
+
+- `ansible-role-change`: alteracao ou criacao de roles Ansible.
+- `add-desktop-app`: adicao de aplicativos desktop.
+- `add-dev-tool`: adicao de linguagens, CLIs e ferramentas de dev.
+- `workstation-verify`: validacao pos-provisionamento.
+- `troubleshoot-provisioning`: diagnostico de falhas do playbook.
+
+Ao trabalhar neste repositorio, leia tambem:
+
+```bash
+{{ ai_assistant_home }}/repo-context/workstation-provision-AGENTS.md
+```

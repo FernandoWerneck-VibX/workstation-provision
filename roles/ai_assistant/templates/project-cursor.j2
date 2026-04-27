@@ -1,0 +1,14 @@
+---
+description: AI readiness rules for this repository
+alwaysApply: true
+---
+
+# AI Readiness
+
+- Read `README.md` and `AGENTS.md` before substantial edits.
+- Preserve existing local changes.
+- Do not add secrets or credentials.
+- Prefer the repository validation command:
+  `{{ item.0.validate | default('ver README ou Makefile') }}`
+- Stack hint: `{{ item.0.stack | default('nao informado') }}`
+

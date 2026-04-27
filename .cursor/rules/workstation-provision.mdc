@@ -1,0 +1,14 @@
+---
+description: Workstation provision repository rules
+alwaysApply: true
+---
+
+# Workstation Provision
+
+- Read `AGENTS.md` and `docs/ARCHITECTURE.md` before substantial edits.
+- Keep Ansible tasks idempotent.
+- Use existing role defaults instead of hardcoded values.
+- Do not add secrets, tokens or private keys.
+- Validate with `make check`.
+- Run `make lint` when the tools are available.
+
