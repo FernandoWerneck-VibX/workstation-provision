@@ -6,6 +6,18 @@
          else 'arm64' if ansible_architecture in ['aarch64', 'arm64']
          else ansible_architecture }}
 
+- name: Definir arquitetura do AWS CLI
+  set_fact:
+    aws_cli_arch: >-
+      {{ 'x86_64' if ansible_architecture == 'x86_64'
+         else 'aarch64' if ansible_architecture in ['aarch64', 'arm64']
+         else ansible_architecture }}
+
+- name: Validar arquitetura do AWS CLI
+  fail:
+    msg: "Arquitetura nao suportada pelo AWS CLI v2: {{ ansible_architecture }}."
+  when: aws_cli_arch not in ['x86_64', 'aarch64']
+
 - name: Definir release do repo Docker
   set_fact:
     docker_repo_release: >-
@@ -422,6 +434,82 @@
     checksum: "sha256:{{ kind_checksum.content.split()[0] }}"
   when: kind_installed_version != kind_resolved_version
 
+- name: Descobrir versao do AWS CLI
+  uri:
+    url: https://api.github.com/repos/aws/aws-cli/tags?per_page=1
+    return_content: yes
+    headers:
+      User-Agent: ansible
+  register: aws_cli_latest
+  failed_when: false
+  when: aws_cli_version == "latest"
+
+- name: Validar consulta do AWS CLI
+  fail:
+    msg: "Falha ao consultar release do AWS CLI no GitHub. Verifique rede/proxy ou defina aws_cli_version fixo."
+  when: aws_cli_version == "latest" and (aws_cli_latest.status is not defined or aws_cli_latest.status != 200)
+
+- name: Definir versao do AWS CLI
+  set_fact:
+    aws_cli_resolved_version: "{{ aws_cli_latest.json[0].name }}"
+  when: aws_cli_version == "latest"
+
+- name: Definir versao fixa do AWS CLI
+  set_fact:
+    aws_cli_resolved_version: "{{ aws_cli_version | regex_replace('^v', '') }}"
+  when: aws_cli_version != "latest"
+
+- name: Verificar versao instalada do AWS CLI
+  command: aws --version
+  register: aws_cli_installed
+  failed_when: false
+  changed_when: false
+
+- name: Extrair versao instalada do AWS CLI
+  set_fact:
+    aws_cli_installed_version: "{{ (aws_cli_installed.stdout | regex_search('aws-cli/([0-9.]+)', '\\1') | default([''], true)) | first }}"
+
+- name: Verificar instalacao gerenciada do AWS CLI
+  stat:
+    path: "{{ aws_cli_install_dir }}/v2/current"
+  register: aws_cli_managed_install
+
+- name: Criar diretoria temporaria do AWS CLI
+  tempfile:
+    state: directory
+    suffix: awscli
+  register: aws_cli_tmp
+  when: aws_cli_installed_version != aws_cli_resolved_version
+
+- name: Baixar instalador do AWS CLI
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ aws_cli_arch }}-{{ aws_cli_resolved_version }}.zip"
+    dest: "{{ aws_cli_tmp.path }}/awscliv2.zip"
+    mode: "0644"
+  when: aws_cli_installed_version != aws_cli_resolved_version
+
+- name: Extrair instalador do AWS CLI
+  unarchive:
+    src: "{{ aws_cli_tmp.path }}/awscliv2.zip"
+    dest: "{{ aws_cli_tmp.path }}"
+    remote_src: yes
+  when: aws_cli_installed_version != aws_cli_resolved_version
+
+- name: Instalar AWS CLI
+  command: >-
+    {{ aws_cli_tmp.path }}/aws/install
+    --bin-dir {{ aws_cli_bin_dir }}
+    --install-dir {{ aws_cli_install_dir }}
+    {{ '--update' if aws_cli_managed_install.stat.exists else '' }}
+  changed_when: true
+  when: aws_cli_installed_version != aws_cli_resolved_version
+
+- name: Limpar temporarios do AWS CLI
+  file:
+    path: "{{ aws_cli_tmp.path }}"
+    state: absent
+  when: aws_cli_installed_version != aws_cli_resolved_version
+
 - name: Validar Docker
   command: docker --version
   register: docker_check
@@ -465,6 +553,17 @@
   fail:
     msg: "Falha ao validar GitHub CLI. Verifique acesso ao repo do GitHub CLI, rede/proxy ou apt."
   when: gh_check.rc != 0
+
+- name: Validar AWS CLI
+  command: aws --version
+  register: aws_cli_check
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se AWS CLI nao validar
+  fail:
+    msg: "Falha ao validar AWS CLI. Verifique acesso a awscli.amazonaws.com, rede/proxy ou fixe aws_cli_version."
+  when: aws_cli_check.rc != 0
 
 - name: Validar k9s
   command: k9s version

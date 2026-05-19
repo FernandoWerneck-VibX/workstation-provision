@@ -53,6 +53,7 @@ programacao.
 ### DevOps
 
 - Docker Engine + Compose plugin
+- AWS CLI v2
 - `kubectl`
 - `helm`
 - `kind`
