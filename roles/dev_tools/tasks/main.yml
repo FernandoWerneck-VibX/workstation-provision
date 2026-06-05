@@ -40,14 +40,14 @@
   environment:
     PROFILE: /dev/null
 
-- name: Instalar Node/Yarn/PNPM/Vue/Vite
+- name: Instalar Node/Yarn/PNPM/Vue/Vite e CLIs de IA (Claude Code, Codex)
   become_user: "{{ dev_user }}"
   shell: |
     export NVM_DIR="{{ dev_home }}/.nvm"
     . "$NVM_DIR/nvm.sh"
     nvm install {{ node_version }}
     nvm alias default {{ node_version }}
-    npm install -g yarn pnpm @vue/cli create-vite
+    npm install -g yarn pnpm @vue/cli create-vite @anthropic-ai/claude-code @openai/codex
 
 - name: Ativar NVM no Bash
   copy:
