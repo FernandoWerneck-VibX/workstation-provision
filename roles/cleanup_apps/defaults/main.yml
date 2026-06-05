@@ -19,7 +19,5 @@ cleanup_apps_packages:
   - gnome-mahjongg
   - gnome-mines
   - gnome-sudoku
-  - obsidian
 
-cleanup_apps_flatpaks:
-  - md.obsidian.Obsidian
+cleanup_apps_flatpaks: []
