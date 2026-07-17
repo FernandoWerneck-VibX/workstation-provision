@@ -278,8 +278,12 @@
   become_user: "{{ dev_user }}"
   shell: gsettings set {{ item.schema }} {{ item.key }} {{ item.value }}
   loop:
-    - { schema: "org.cinnamon.desktop.interface", key: "enable-animations", value: "false" }
-    - { schema: "org.gnome.desktop.interface", key: "enable-animations", value: "false" }
+    - schema: "org.cinnamon.desktop.interface"
+      key: "enable-animations"
+      value: "false"
+    - schema: "org.gnome.desktop.interface"
+      key: "enable-animations"
+      value: "false"
   loop_control:
     label: "{{ item.schema }} {{ item.key }}"
   when: gsettings_check.rc == 0
