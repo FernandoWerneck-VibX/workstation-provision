@@ -1,5 +1,8 @@
 ---
 # Perfil para sua maquina pessoal (mantem todos os recursos ativos)
+# Identidade do git (sobrescreve os placeholders de group_vars/all.yml)
+git_user_name: "Fernando Werneck"
+git_user_email: "fernando@vibx.com.br"
 syncthing_enable: true
 gdrive_enable: true
 projects_enable: true
