@@ -1,3 +1,4 @@
+---
 # Detecta automaticamente o usuario do SO que executa o ansible-playbook.
 dev_user: "{{ lookup('env', 'SUDO_USER') | default(lookup('env', 'USER'), true) }}"
 dev_home: "/home/{{ dev_user }}"
