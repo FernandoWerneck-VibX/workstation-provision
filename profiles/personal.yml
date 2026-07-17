@@ -349,7 +349,7 @@ projects_repos:
     validate: "mvn test"
   - name: vibx-lp
     path: "vib/vibx-lp"
-    url: "https://github.com/Vibxtech/vibx-site.git"
+    url: "git@github.com:Vibxtech/vibx-site.git"
     stack: "node-frontend"
     ai_profile: "frontend-app"
     validate: "npm run build"
