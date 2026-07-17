@@ -50,6 +50,7 @@
       - curl
       - wget
       - git
+      - gitk
       - ca-certificates
       - apt-transport-https
       - gzip
