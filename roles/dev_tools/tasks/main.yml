@@ -201,7 +201,8 @@
 - name: Extrair versao instalada do Flutter
   set_fact:
     flutter_installed_version: >-
-      {{ (flutter_installed.stdout_lines[0].split(' ')[1])
+      {{ (flutter_installed.stdout | default('') | regex_search('Flutter\s+(\S+)', '\1')
+          | default([''], true) | first)
          if flutter_installed.rc == 0 else '' }}
 
 - name: Garantir diretorio de instalacao do Flutter
