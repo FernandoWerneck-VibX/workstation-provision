@@ -1,6 +1,11 @@
 ---
 flatpak_remote_name: "flathub"
 flatpak_remote_url: "https://flathub.org/repo/flathub.flatpakrepo"
+# Atualizacao automatica de Flatpaks: passo no provisionamento + timer systemd
+# (diario e no boot). Desative com desktop_apps_flatpak_autoupdate_enable: false.
+desktop_apps_flatpak_autoupdate_enable: true
+desktop_apps_flatpak_update_oncalendar: "daily"
+desktop_apps_flatpak_update_onbootsec: "3min"
 postman_deb_url: ""
 postman_deb_package_name: ""
 desktop_apps_vscode_markdown_desktop: "code.desktop"

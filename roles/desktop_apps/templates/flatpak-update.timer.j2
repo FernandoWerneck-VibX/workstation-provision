@@ -1,0 +1,10 @@
+[Unit]
+Description=Atualizacao automatica de Flatpaks (diaria e no boot)
+
+[Timer]
+OnBootSec={{ desktop_apps_flatpak_update_onbootsec }}
+OnCalendar={{ desktop_apps_flatpak_update_oncalendar }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

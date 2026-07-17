@@ -1,0 +1,10 @@
+[Unit]
+Description=Atualizar aplicativos e runtimes Flatpak (system)
+Documentation=man:flatpak(1)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=LC_ALL=C
+ExecStart=/usr/bin/flatpak update --system -y --noninteractive

@@ -84,6 +84,41 @@
     loop_var: desktop_app
     label: "{{ desktop_app.id }}"
 
+- name: Atualizar Flatpaks do sistema no provisionamento
+  command: flatpak update --system -y --noninteractive
+  environment:
+    LC_ALL: C
+    LANG: C
+  register: desktop_apps_flatpak_update
+  changed_when: "'Nothing to do' not in desktop_apps_flatpak_update.stdout"
+  when: desktop_apps_flatpak_autoupdate_enable | bool
+
+- name: Instalar servico systemd de atualizacao de Flatpak
+  template:
+    src: flatpak-update.service.j2
+    dest: /etc/systemd/system/flatpak-update.service
+    mode: "0644"
+  when: desktop_apps_flatpak_autoupdate_enable | bool
+
+- name: Instalar timer systemd de atualizacao de Flatpak
+  template:
+    src: flatpak-update.timer.j2
+    dest: /etc/systemd/system/flatpak-update.timer
+    mode: "0644"
+  when: desktop_apps_flatpak_autoupdate_enable | bool
+
+- name: Recarregar systemd para o timer de Flatpak
+  systemd:
+    daemon_reload: yes
+  when: desktop_apps_flatpak_autoupdate_enable | bool
+
+- name: Habilitar e iniciar timer de atualizacao de Flatpak
+  systemd:
+    name: flatpak-update.timer
+    enabled: yes
+    state: started
+  when: desktop_apps_flatpak_autoupdate_enable | bool
+
 - name: Validar apps desktop instalados
   shell: |
     is_pkg_installed() {
