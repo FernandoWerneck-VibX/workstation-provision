@@ -10,6 +10,7 @@
   shell: |
     source "{{ dev_home }}/.sdkman/bin/sdkman-init.sh"
     sdk install java {{ java_version }}
+    sdk default java {{ java_version }}
     sdk install maven
     sdk install gradle
   args: {executable: /bin/bash}
