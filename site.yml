@@ -3,22 +3,41 @@
   hosts: local
   become: yes
   roles:
-    - common
-    - cinnamon
-    - shell_env
-    - shell
-    - dev_tools
-    - devops
+    # As tags espelham o nome da role para permitir execucao parcial
+    # (--tags/--skip-tags), inclusive no timer de self-update.
+    - role: common
+      tags: [common]
+    - role: cinnamon
+      tags: [cinnamon]
+    - role: shell_env
+      tags: [shell_env]
+    - role: shell
+      tags: [shell]
+    - role: dev_tools
+      tags: [dev_tools]
+    - role: devops
+      tags: [devops]
     - role: openclaw
       when: openclaw_enable | default(true) | bool
-    - desktop_apps
+      tags: [openclaw]
+    - role: desktop_apps
+      tags: [desktop_apps]
     - role: projects
       when: projects_enable | default(true) | bool
+      tags: [projects]
     - role: ai_assistant
       when: ai_assistant_enable | default(true) | bool
+      tags: [ai_assistant]
     - role: syncthing
       when: syncthing_enable | default(true) | bool
+      tags: [syncthing]
     - role: gdrive
       when: gdrive_enable | default(true) | bool
-    - cleanup_apps
-    - onboarding
+      tags: [gdrive]
+    - role: auto_updates
+      when: auto_updates_enable | default(true) | bool
+      tags: [auto_updates]
+    - role: cleanup_apps
+      tags: [cleanup_apps]
+    - role: onboarding
+      tags: [onboarding]

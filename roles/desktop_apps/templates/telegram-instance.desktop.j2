@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name={{ telegram_instance.name }}
+Comment=Instancia isolada do Telegram Desktop (workdir {{ telegram_instance.workdir }})
+Exec={{ desktop_apps_telegram_exec }} -many -workdir {{ desktop_apps_telegram_data_dir }}/{{ telegram_instance.workdir }}
+Icon={{ desktop_apps_telegram_icon }}
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+Keywords=telegram;chat;messenger;

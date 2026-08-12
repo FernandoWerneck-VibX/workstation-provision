@@ -48,7 +48,9 @@ desktop_apps_catalog:
       apt_package: "code"
       validate_path: "/usr/bin/code"
   - id: "intellij-idea-ultimate"
-  - id: "com.sublimetext.three"
+  # Sublime Text 4. O ID antigo (com.sublimetext.three) e Sublime Text 3, EOL
+  # desde 2019: o Flatpak atualizava, mas dentro de uma branch parada.
+  - id: "com.sublimehq.SublimeText"
     fallback:
       apt_key_url: "https://download.sublimetext.com/sublimehq-pub.gpg"
       apt_key_dest: "/etc/apt/keyrings/sublimehq.gpg"
@@ -81,11 +83,76 @@ desktop_apps_catalog:
   - id: "org.ferdium.Ferdium"
     fallback:
       apt: "ferdium"
+  - id: "org.telegram.desktop"
+    fallback:
+      apt: "telegram-desktop"
   - id: "org.gnome.Snapshot"
     fallback:
       apt: "cheese"
   - id: "io.github.mfat.sshpilot"
   - id: "org.kde.audiotube"
+
+# Kazam2 (fork mantido do Kazam): gravador de tela X11-native.
+#
+# Por que nao um Flatpak: Kooha e os gravadores modernos gravam via portal
+# ScreenCast do XDG, e nenhum backend de portal do Cinnamon implementa esse
+# servico numa sessao X11 - eles abrem e falham ao gravar. O Kazam2 captura
+# direto por python-xlib/GStreamer, entao funciona.
+#
+# Por que do git: nao existe .deb, AppImage nem Flatpak. O snapcraft.yaml e
+# inutil aqui (o role common remove e bloqueia o snapd) e o PyPI esta parado em
+# 2024-08, dois anos atras do master. Instalar do git segue o mesmo padrao que o
+# role shell ja usa para ble.sh e bash-git-prompt: a cada execucao comparamos o
+# commit do master com o instalado, o que faz o timer de self-update manter isso
+# atualizado sozinho, sem interacao.
+desktop_apps_kazam2_enable: true
+desktop_apps_kazam2_repo: "https://github.com/henrywoo/kazam"
+desktop_apps_kazam2_api_repo: "henrywoo/kazam"
+# Aceita branch, tag ou SHA. Fixe num commit se o master regredir - a API
+# /commits/<ref> resolve qualquer um dos tres.
+desktop_apps_kazam2_branch: "master"
+desktop_apps_kazam2_venv: "/opt/kazam2"
+desktop_apps_kazam2_wrapper: "/usr/local/bin/kazam"
+desktop_apps_kazam2_icon: "/usr/share/pixmaps/kazam2.png"
+desktop_apps_kazam2_desktop_entry: "/usr/share/applications/kazam2.desktop"
+desktop_apps_kazam2_apt_packages:
+  # Runtime: GTK3, GStreamer e X11 vem todos do sistema, para nao compilar
+  # PyGObject/pycairo/dbus-python dentro do venv a cada atualizacao.
+  - python3-gi
+  - python3-gi-cairo
+  - python3-cairo
+  - python3-dbus
+  - python3-xlib
+  - python3-xdg
+  - python3-venv
+  - gir1.2-gtk-3.0
+  - gir1.2-gst-plugins-base-1.0
+  - gstreamer1.0-plugins-good
+  - gstreamer1.0-pulseaudio
+  # Build: o setup.py usa DistUtilsExtra, que por sua vez chama intltool-update.
+  - python3-distutils-extra
+  - intltool
+
+# Instancias isoladas do Telegram Desktop.
+# O cliente oficial e nativo (Qt/C++, GPLv3) e aceita 3 contas por instancia no
+# plano gratuito. Para ir alem, as flags oficiais -many (desliga o lock de
+# instancia unica) e -workdir (diretorio de dados proprio) dao instancias
+# totalmente independentes, sem nenhuma feature paga.
+# A instancia "principal" usa o workdir padrao (TelegramDesktop), o mesmo do
+# launcher que o Flatpak exporta - assim as duas compartilham a sessao em vez
+# de duplicar dados.
+desktop_apps_telegram_enable: true
+desktop_apps_telegram_id: "org.telegram.desktop"
+desktop_apps_telegram_instances:
+  - slug: "principal"
+    name: "Telegram"
+    workdir: "TelegramDesktop"
+  - slug: "conta2"
+    name: "Telegram (Conta 2)"
+    workdir: "TelegramConta2"
+  - slug: "conta3"
+    name: "Telegram (Conta 3)"
+    workdir: "TelegramConta3"
 
 desktop_apps_intellij_base:
   id: "intellij-idea-ultimate"

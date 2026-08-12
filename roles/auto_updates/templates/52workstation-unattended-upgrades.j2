@@ -1,0 +1,22 @@
+// Gerenciado pelo role auto_updates do workstation-provision.
+// Nao edite manualmente: ajuste as variaveis auto_updates_apt_* e re-rode.
+
+Unattended-Upgrade::Origins-Pattern {
+{% for origin in auto_updates_apt_origins %}
+    "{{ origin }}";
+{% endfor %}
+};
+
+Unattended-Upgrade::Package-Blacklist {
+{% for package in auto_updates_apt_blacklist %}
+    "{{ package }}";
+{% endfor %}
+};
+
+// Aplica em passos menores, para que uma interrupcao nao deixe o dpkg no meio.
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::InstallOnShutdown "false";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "{{ auto_updates_apt_remove_unused | ternary('true', 'false') }}";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "{{ auto_updates_apt_remove_unused | ternary('true', 'false') }}";
+Unattended-Upgrade::Automatic-Reboot "{{ auto_updates_apt_automatic_reboot | ternary('true', 'false') }}";
+Unattended-Upgrade::SyslogEnable "true";

@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Gerenciado pelo role auto_updates do workstation-provision.
+# Nao edite manualmente: ajuste as variaveis auto_updates_selfupdate_* e re-rode.
+#
+# Re-executa o playbook local sem interacao. Como todas as roles resolvem
+# "latest" em tempo de execucao, esta e a atualizacao automatica das coisas que
+# nao vem de apt (unattended-upgrades) nem de Flatpak (flatpak-update.timer).
+set -euo pipefail
+
+REPO_DIR="{{ auto_updates_selfupdate_repo_dir }}"
+LOCK_FILE="{{ auto_updates_selfupdate_lock }}"
+
+export ANSIBLE_FORCE_COLOR=0
+
+log() {
+  printf '%s [workstation-selfupdate] %s\n' "$(date -Is)" "$*"
+}
+
+if [ ! -f "$REPO_DIR/site.yml" ] || [ ! -f "$REPO_DIR/inventory.ini" ]; then
+  log "ERRO: playbook nao encontrado em $REPO_DIR (repositorio movido ou removido?)"
+  exit 1
+fi
+
+if ! command -v ansible-playbook >/dev/null 2>&1; then
+  log "ERRO: ansible-playbook nao esta no PATH"
+  exit 1
+fi
+
+cd "$REPO_DIR"
+
+# O apt-daily-upgrade.timer tem RandomizedDelaySec grande, entao pode estar
+# rodando agora. Se o dpkg estiver ocupado, as tasks apt do playbook falhariam
+# no lock - melhor esperar.
+if [ -e /var/lib/dpkg/lock-frontend ]; then
+  if ! flock -w {{ auto_updates_selfupdate_dpkg_wait_seconds }} /var/lib/dpkg/lock-frontend true; then
+    log "AVISO: dpkg segue ocupado depois de {{ auto_updates_selfupdate_dpkg_wait_seconds }}s; seguindo mesmo assim"
+  fi
+fi
+
+{% if auto_updates_selfupdate_git_pull | bool %}
+if [ -d .git ]; then
+  log "Atualizando o repositorio de provisionamento (git pull --ff-only)"
+  git -c safe.directory="$REPO_DIR" pull --ff-only \
+    || log "AVISO: git pull falhou; seguindo com a copia local"
+fi
+{% endif %}
+
+playbook_args=(
+  -i inventory.ini
+  site.yml
+  # SUDO_USER/USER nao existem dentro do systemd, entao dev_user vai explicito.
+  -e "dev_user={{ dev_user }}"
+{% if (auto_updates_selfupdate_profile | trim | length) > 0 %}
+  -e "@profiles/{{ auto_updates_selfupdate_profile }}"
+{% endif %}
+{% for key, value in auto_updates_selfupdate_extra_vars.items() %}
+  -e "{{ key }}={{ (value | string | lower) if (value is boolean) else value }}"
+{% endfor %}
+{% if (auto_updates_selfupdate_skip_tags | length) > 0 %}
+  --skip-tags "{{ auto_updates_selfupdate_skip_tags | join(',') }}"
+{% endif %}
+)
+
+log "Iniciando atualizacao nao interativa do workstation"
+
+set +e
+flock -n -E 75 "$LOCK_FILE" ansible-playbook "${playbook_args[@]}"
+status=$?
+set -e
+
+case "$status" in
+  0)
+    log "Atualizacao concluida com sucesso"
+    ;;
+  75)
+    log "Outra execucao ainda esta em andamento; nada a fazer"
+    status=0
+    ;;
+  *)
+    log "ERRO: atualizacao falhou (exit ${status}). Rode 'journalctl -u workstation-selfupdate' para detalhes."
+    ;;
+esac
+
+exit "$status"

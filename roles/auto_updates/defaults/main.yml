@@ -1,0 +1,57 @@
+---
+# Camada 1 - apt: unattended-upgrades cobre tudo que vem de repositorio apt,
+# inclusive os de terceiros adicionados pelo playbook (Docker, GitHub CLI,
+# VS Code, Sublime, Spotify). O padrao "origin=*" e proposital: os patterns
+# default do Ubuntu so liberam os repos oficiais, e ai VS Code/Docker/gh
+# ficariam parados.
+#
+# Efeito colateral de "origin=*": entram tambem noble-backports e o repo do
+# Mint por inteiro. Para um perfil mais conservador, troque por uma lista
+# explicita, aceitando ter que edita-la a cada repo novo:
+#   auto_updates_apt_origins:
+#     - "origin=Ubuntu,archive=${distro_codename}-security"
+#     - "origin=Ubuntu,archive=${distro_codename}-updates"
+#     - "origin=linuxmint"
+#     - "origin=Docker"
+auto_updates_apt_enable: true
+auto_updates_apt_origins:
+  - "origin=*"
+# Pacotes que nunca devem subir sozinhos (regex do unattended-upgrades).
+auto_updates_apt_blacklist: []
+auto_updates_apt_autoclean_interval: 7
+auto_updates_apt_remove_unused: true
+# Workstation nunca reinicia sozinha; kernel novo espera o proximo boot.
+auto_updates_apt_automatic_reboot: false
+
+# Camada 2 - re-execucao agendada do proprio playbook. E o que atualiza o que
+# nao vem de apt nem de Flatpak: binarios em /usr/local/bin (kubectl, helm,
+# k9s, kind, atuin), tarballs em /opt (IntelliJ, Flutter), AWS CLI, NVM/npm
+# globais, uv e suas ferramentas, ble.sh e bash-git-prompt. Todas as roles
+# resolvem "latest" em tempo de execucao, entao rodar o playbook JA e o
+# mecanismo de atualizacao - so faltava alguem chamar sem interacao.
+auto_updates_selfupdate_enable: true
+auto_updates_selfupdate_oncalendar: "Sun 03:30"
+auto_updates_selfupdate_randomized_delay: "30min"
+# Cobre a espera pelo lock do dpkg (abaixo) mais a execucao do playbook.
+auto_updates_selfupdate_timeout: "150min"
+auto_updates_selfupdate_repo_dir: "{{ playbook_dir }}"
+# Deve casar com o perfil usado no bootstrap (ex.: "personal.yml"). Vazio roda
+# sem perfil, o que falha se group_vars/all.yml ainda tiver os placeholders do
+# git_user_name/git_user_email.
+auto_updates_selfupdate_profile: ""
+# git pull no repo de provisionamento antes de aplicar. Desligado por padrao
+# para nao mexer em trabalho local nao commitado.
+auto_updates_selfupdate_git_pull: false
+# apt fica com o unattended-upgrades; a re-execucao nao precisa de dist-upgrade.
+auto_updates_selfupdate_extra_vars:
+  common_system_upgrade: false
+# Tags de role a pular na execucao automatica (ex.: ["projects"] se algum
+# clone novo exigir chave SSH com passphrase).
+auto_updates_selfupdate_skip_tags: []
+# Espera pelo lock do dpkg antes de comecar, para nao colidir com um
+# unattended-upgrades em andamento.
+auto_updates_selfupdate_dpkg_wait_seconds: 1800
+auto_updates_selfupdate_script: "/usr/local/sbin/workstation-selfupdate"
+auto_updates_selfupdate_lock: "/var/lock/workstation-selfupdate.lock"
+auto_updates_selfupdate_log: "/var/log/workstation-selfupdate.log"
+auto_updates_selfupdate_log_rotate_count: 8

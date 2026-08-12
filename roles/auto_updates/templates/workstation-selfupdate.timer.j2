@@ -1,0 +1,12 @@
+[Unit]
+Description=Agenda a atualizacao automatica do workstation
+
+[Timer]
+OnCalendar={{ auto_updates_selfupdate_oncalendar }}
+RandomizedDelaySec={{ auto_updates_selfupdate_randomized_delay }}
+# Persistent recupera a execucao perdida quando a maquina estava desligada.
+Persistent=true
+Unit=workstation-selfupdate.service
+
+[Install]
+WantedBy=timers.target

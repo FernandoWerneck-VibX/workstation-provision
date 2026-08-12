@@ -19,8 +19,33 @@ O arquivo `site.yml` aplica as roles nesta ordem:
 10. `ai_assistant`: contexto, skills e preparo opcional dos repositorios.
 11. `syncthing`: sincronizacao local opcional.
 12. `gdrive`: Google Drive via `rclone` opcional.
-13. `cleanup_apps`: remocao de aplicativos indesejados.
-14. `onboarding`: checklist final em `~/WORKSTATION_ONBOARDING.md`.
+13. `auto_updates`: `unattended-upgrades` e timer de reaplicacao do playbook.
+14. `cleanup_apps`: remocao de aplicativos indesejados.
+15. `onboarding`: checklist final em `~/WORKSTATION_ONBOARDING.md`.
+
+Cada role tem uma tag com o proprio nome em `site.yml`, o que permite execucao
+parcial via `--tags`/`--skip-tags` (usado tambem pelo timer de self-update).
+
+## Atualizacao Automatica
+
+O projeto assume que nada instalado deve exigir uma re-execucao manual do
+bootstrap. Tres camadas cobrem os tres tipos de instalacao que existem aqui:
+
+- **Flatpak** (`roles/desktop_apps`): `flatpak-update.timer`, diario e no boot.
+- **apt** (`roles/auto_updates`): `unattended-upgrades` com `Origins-Pattern`
+  aberto, porque os patterns default do Ubuntu so liberam os repos oficiais e
+  deixariam VS Code, Docker e GitHub CLI parados.
+- **Resto** (`roles/auto_updates`): `workstation-selfupdate.timer` reexecuta o
+  proprio playbook. Isso funciona porque as roles resolvem "latest" em tempo de
+  execucao — binarios em `/usr/local/bin`, tarballs em `/opt`, AWS CLI, npm
+  globais, uv, ble.sh e afins ja se atualizam a cada run.
+
+Consequencia pratica ao escrever tasks: **`creates:` congela a versao**. Se um
+componente precisa acompanhar upstream, a task tem que ter um caminho de
+atualizacao (comparacao de versao, `self update`/`upgrade` do proprio binario ou
+reinstalacao idempotente), nao apenas um guard de existencia. Versoes pinadas em
+variaveis (`java_version`, `python_version`, `node_version`, `nvm_version`) sao
+excecao deliberada.
 
 ## Variaveis
 

@@ -20,6 +20,8 @@ gdrive_enable: true
 projects_enable: true
 openclaw_enable: true
 ai_assistant_enable: true
+# Atualizacao automatica (unattended-upgrades + timer que re-roda o playbook).
+auto_updates_enable: true
 ai_assistant_project_pack_enable: false
 syncthing_folders:
   - "{{ dev_home }}/Downloads"

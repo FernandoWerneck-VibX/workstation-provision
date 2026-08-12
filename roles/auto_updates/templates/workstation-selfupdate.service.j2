@@ -1,0 +1,14 @@
+[Unit]
+Description=Atualizacao automatica do workstation (re-executa o playbook local)
+Documentation=file://{{ auto_updates_selfupdate_repo_dir }}/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ auto_updates_selfupdate_script }}
+TimeoutStartSec={{ auto_updates_selfupdate_timeout }}
+Nice=10
+IOSchedulingClass=idle
+StandardOutput=append:{{ auto_updates_selfupdate_log }}
+StandardError=append:{{ auto_updates_selfupdate_log }}

@@ -1,0 +1,60 @@
+---
+# Cria uma instancia isolada do Telegram Desktop por entrada de
+# desktop_apps_telegram_instances: workdir proprio + launcher no menu.
+- name: Verificar se o Telegram Desktop veio do Flatpak
+  command: flatpak info --system {{ desktop_apps_telegram_id }}
+  register: desktop_apps_telegram_flatpak
+  changed_when: false
+  failed_when: false
+
+- name: Definir caminhos e comando das instancias do Telegram
+  set_fact:
+    desktop_apps_telegram_is_flatpak: "{{ desktop_apps_telegram_flatpak.rc == 0 }}"
+    # No Flatpak o XDG_DATA_HOME do app fica dentro do sandbox, entao o workdir
+    # nao precisa de nenhuma permissao extra de filesystem.
+    desktop_apps_telegram_data_dir: >-
+      {{
+        (dev_home ~ '/.var/app/' ~ desktop_apps_telegram_id ~ '/data')
+        if desktop_apps_telegram_flatpak.rc == 0
+        else (dev_home ~ '/.local/share')
+      }}
+    desktop_apps_telegram_exec: >-
+      {{
+        ('/usr/bin/flatpak run ' ~ desktop_apps_telegram_id)
+        if desktop_apps_telegram_flatpak.rc == 0
+        else '/usr/bin/telegram-desktop'
+      }}
+    desktop_apps_telegram_icon: >-
+      {{ desktop_apps_telegram_id if desktop_apps_telegram_flatpak.rc == 0 else 'telegram' }}
+
+- name: Garantir diretorio de aplicacoes do usuario
+  file:
+    path: "{{ dev_home }}/.local/share/applications"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0755"
+
+- name: Garantir workdir de cada instancia do Telegram
+  file:
+    path: "{{ desktop_apps_telegram_data_dir }}/{{ item.workdir }}"
+    state: directory
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0700"
+  loop: "{{ desktop_apps_telegram_instances }}"
+  loop_control:
+    label: "{{ item.slug }} -> {{ item.workdir }}"
+
+- name: Instalar launcher de cada instancia do Telegram
+  template:
+    src: telegram-instance.desktop.j2
+    dest: "{{ dev_home }}/.local/share/applications/telegram-{{ telegram_instance.slug }}.desktop"
+    owner: "{{ dev_user }}"
+    group: "{{ dev_user }}"
+    mode: "0644"
+  loop: "{{ desktop_apps_telegram_instances }}"
+  loop_control:
+    loop_var: telegram_instance
+    label: "{{ telegram_instance.slug }}"
+  notify: Atualizar cache de aplicacoes do usuario

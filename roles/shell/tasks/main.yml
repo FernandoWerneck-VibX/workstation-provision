@@ -49,6 +49,15 @@
   args:
     creates: "{{ dev_home }}/.local/bin/chezmoi"
 
+# A task acima usa 'creates:', entao o Chezmoi ficaria parado na versao do
+# primeiro provisionamento. 'chezmoi upgrade' e no-op quando ja esta atual.
+- name: Atualizar Chezmoi para a versao mais recente
+  become_user: "{{ dev_user }}"
+  command: "{{ dev_home }}/.local/bin/chezmoi upgrade"
+  register: chezmoi_upgrade
+  failed_when: false
+  changed_when: false
+
 - name: Verificar fonte local do Chezmoi no projeto
   stat:
     path: "{{ playbook_dir }}/chezmoi"

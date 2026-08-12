@@ -19,5 +19,11 @@ cleanup_apps_packages:
   - gnome-mahjongg
   - gnome-mines
   - gnome-sudoku
+  # Kazam 1.4.5 do apt (upstream parado em 2019). Substituido pelo Kazam2 do
+  # git, instalado em /opt/kazam2 pelo role desktop_apps.
+  - kazam
 
-cleanup_apps_flatpaks: []
+cleanup_apps_flatpaks:
+  # Sublime Text 3 (EOL). Substituido por com.sublimehq.SublimeText.
+  - com.sublimetext.three
+  - md.obsidian.Obsidian

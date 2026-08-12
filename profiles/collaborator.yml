@@ -6,3 +6,5 @@ gdrive_enable: false
 projects_enable: false
 openclaw_enable: false
 projects_repos: []
+# Perfil que o timer de self-update deve reaplicar (precisa casar com este arquivo).
+auto_updates_selfupdate_profile: "collaborator.yml"

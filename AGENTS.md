@@ -38,6 +38,10 @@ make dry-run PROFILE=personal.yml
 
 - Preserve idempotencia sempre que possivel.
 - Para comandos shell, use `creates`, `changed_when` ou verificacoes previas.
+- Atencao: `creates` garante idempotencia mas congela a versao instalada. Se o
+  componente deve acompanhar upstream (ver "Atualizacao Automatica" em
+  `docs/ARCHITECTURE.md`), a task precisa de um caminho de atualizacao, porque o
+  timer de self-update reexecuta exatamente estas mesmas tasks.
 - Tarefas que rodam como usuario devem usar `become_user: "{{ dev_user }}"`.
 - Tarefas de sistema podem usar o `become: yes` do playbook principal.
 - Handlers devem ser usados para reiniciar servicos quando templates mudarem.
@@ -53,6 +57,7 @@ make dry-run PROFILE=personal.yml
 - `roles/openclaw`: instalacao do OpenClaw.
 - `roles/ai_assistant`: contexto e readiness pack para agentes de IA.
 - `roles/projects`: clonagem e preparo opcional dos repositorios.
+- `roles/auto_updates`: `unattended-upgrades` e timer que reaplica o playbook.
 - `roles/onboarding`: checklist final gerado na maquina.
 
 ## Fluxo Seguro

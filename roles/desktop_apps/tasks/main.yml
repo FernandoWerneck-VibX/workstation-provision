@@ -156,6 +156,17 @@
   loop_control:
     label: "{{ item.item.id }}"
 
+- name: Instalar Kazam2 como gravador de tela
+  include_tasks: kazam2.yml
+  when: desktop_apps_kazam2_enable | bool
+
+- name: Configurar instancias isoladas do Telegram Desktop
+  include_tasks: telegram_instances.yml
+  when:
+    - desktop_apps_telegram_enable | bool
+    - (desktop_apps_catalog | selectattr('id', 'equalto', desktop_apps_telegram_id) | list | length) > 0
+    - desktop_apps_telegram_instances | length > 0
+
 - name: Verificar app padrao atual para Markdown
   become_user: "{{ dev_user }}"
   command: xdg-mime query default {{ item }}

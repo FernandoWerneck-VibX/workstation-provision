@@ -67,14 +67,16 @@ Catalogo atual em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects
 - Firefox
 - VS Code
 - IntelliJ IDEA Ultimate
-- Sublime Text
+- Sublime Text 4
 - Postman
 - Discord
 - Spotify
 - Ferdium
+- Telegram Desktop (3 instancias isoladas)
 - Snapshot
 - SSH Pilot
 - Audiotube
+- Kazam2 (gravacao de tela, instalado do git em `/opt/kazam2`)
 - Celluloid
 - gThumb
 
@@ -82,6 +84,23 @@ Observacoes:
 - o projeto prioriza Flatpak para apps desktop, com fallback nativo quando necessario
 - VS Code usa repositorio oficial da Microsoft
 - IntelliJ IDEA Ultimate usa download oficial da JetBrains
+
+#### Instancias do Telegram Desktop
+
+O cliente oficial e nativo (Qt/C++, GPLv3) e aceita 3 contas por instancia no
+plano gratuito. Para ir alem, `desktop_apps_telegram_instances` gera uma
+instancia isolada por entrada usando as flags oficiais `-many` (desliga o lock
+de instancia unica) e `-workdir` (diretorio de dados proprio) — sem nenhuma
+feature paga:
+
+- cada instancia tem sessao, contas e configuracao independentes
+- cada instancia ainda aceita 3 contas, ou seja 3 instancias = 9 contas
+- cada uma ganha um lancador proprio em `~/.local/share/applications`
+- a instancia `principal` usa o workdir padrao, o mesmo do lancador exportado
+  pelo Flatpak, para nao duplicar dados
+
+Ajuste a lista em [roles/desktop_apps/defaults/main.yml](roles/desktop_apps/defaults/main.yml)
+para adicionar, renomear ou remover instancias.
 
 ### Integracoes opcionais
 
@@ -93,6 +112,51 @@ Observacoes:
 - Cinnamon Dynamic Wallpaper no perfil pessoal
 - aplicacao de dotfiles via `chezmoi`
 - clonagem automatica de projetos Git
+
+## Atualizacao automatica
+
+Objetivo: nada instalado por este projeto deve depender de voce rodar o
+bootstrap de novo, nem de clicar em "atualizar". Sao tres camadas, todas
+sem interacao:
+
+| Camada | Cobre | Mecanismo | Frequencia |
+| --- | --- | --- | --- |
+| Flatpak | apps desktop (Chrome, Firefox, Telegram, Ferdium, Discord, Spotify, Postman, Sublime...) | `flatpak-update.timer` | diaria + 3min apos o boot |
+| apt | pacotes do sistema e repos de terceiros (VS Code, Docker, GitHub CLI, Syncthing, rclone, pay-respects...) | `unattended-upgrades` + `apt-daily-upgrade.timer` | diaria |
+| playbook | o resto: binarios em `/usr/local/bin` (kubectl, helm, k9s, kind, atuin), tarballs em `/opt` (IntelliJ, Flutter), AWS CLI, NVM/npm globais, uv e suas ferramentas, ble.sh, bash-git-prompt, chezmoi, Maven/Gradle | `workstation-selfupdate.timer` | semanal (`Sun 03:30`) |
+
+A terceira camada e o `roles/auto_updates`: como todas as roles resolvem
+"latest" em tempo de execucao, **rodar o playbook ja e o mecanismo de
+atualizacao** — o timer so passou a chama-lo sozinho. Ele roda
+`ansible-playbook` como root, com `flock` contra execucoes sobrepostas,
+`Persistent=true` (recupera a execucao perdida se a maquina estava desligada) e
+log em `/var/log/workstation-selfupdate.log` com rotacao semanal.
+
+Pontos de configuracao em [roles/auto_updates/defaults/main.yml](roles/auto_updates/defaults/main.yml):
+
+- `auto_updates_enable`: desliga as duas camadas de uma vez
+- `auto_updates_apt_origins`: origens liberadas no `unattended-upgrades`
+  (padrao `origin=*`, senao os repos de terceiros ficariam parados)
+- `auto_updates_apt_automatic_reboot`: `false` — a maquina nunca reinicia sozinha
+- `auto_updates_selfupdate_oncalendar`: quando reaplicar o playbook
+- `auto_updates_selfupdate_profile`: perfil a reaplicar, definido em cada
+  arquivo de `profiles/` (precisa casar com o perfil usado no bootstrap)
+- `auto_updates_selfupdate_git_pull`: `false` — nao mexe em trabalho local
+  nao commitado; ligue se quiser que a maquina puxe o repo antes de aplicar
+- `auto_updates_selfupdate_skip_tags`: roles a pular na execucao automatica
+
+O que continua **pinado de proposito** (atualizar e decisao, nao rotina):
+`java_version`, `python_version`, `node_version`, `nvm_version` — troque a
+variavel quando quiser subir de versao.
+
+Status e execucao manual:
+
+```bash
+systemctl list-timers 'flatpak-update*' 'workstation-selfupdate*' 'apt-daily*'
+systemctl status workstation-selfupdate --no-pager
+sudo tail -f /var/log/workstation-selfupdate.log
+sudo systemctl start workstation-selfupdate   # forca a atualizacao agora
+```
 
 ## Perfis
 
@@ -366,6 +430,15 @@ find ~/.ai-assistant/skills -maxdepth 2 -name SKILL.md
 flatpak list
 command -v code
 command -v intellij-idea-ultimate
+ls ~/.local/share/applications/telegram-*.desktop
+```
+
+### Verificar as atualizacoes automaticas
+
+```bash
+systemctl list-timers 'flatpak-update*' 'workstation-selfupdate*' 'apt-daily*'
+sudo unattended-upgrade --dry-run --debug | tail -20
+sudo tail -20 /var/log/workstation-selfupdate.log
 ```
 
 ### Verificar shell
@@ -398,6 +471,7 @@ ansible-playbook -i inventory.ini site.yml --ask-become-pass -vv 2>&1 | tee ansi
 - `roles/projects`: clonagem de repositorios
 - `roles/syncthing`: sincronizacao entre maquinas
 - `roles/gdrive`: montagem do Google Drive com `rclone`
+- `roles/auto_updates`: `unattended-upgrades` e timer de reaplicacao do playbook
 - `roles/cleanup_apps`: remocao de apps preinstalados e limpeza final
 - `roles/onboarding`: gera `~/WORKSTATION_ONBOARDING.md`
 

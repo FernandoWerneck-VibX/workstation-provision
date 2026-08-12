@@ -1,0 +1,146 @@
+---
+# Camada 1: apt via unattended-upgrades.
+- name: Instalar unattended-upgrades
+  apt:
+    name: unattended-upgrades
+    state: present
+  when: auto_updates_apt_enable | bool
+
+- name: Configurar periodicidade do apt
+  copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Download-Upgradeable-Packages "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "{{ auto_updates_apt_autoclean_interval }}";
+  when: auto_updates_apt_enable | bool
+
+- name: Configurar unattended-upgrades
+  template:
+    src: 52workstation-unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/52workstation-unattended-upgrades
+    mode: "0644"
+  when: auto_updates_apt_enable | bool
+
+- name: Validar sintaxe da configuracao do apt
+  command: apt-config dump
+  changed_when: false
+  when: auto_updates_apt_enable | bool
+
+- name: Habilitar timers do apt
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - apt-daily.timer
+    - apt-daily-upgrade.timer
+  when: auto_updates_apt_enable | bool
+
+# Simulacao apenas informativa: pode falhar por lock do apt ou rede, o que nao
+# invalida a configuracao (essa parte quem valida e o apt-config dump acima).
+- name: Simular execucao do unattended-upgrades
+  command: unattended-upgrade --dry-run
+  register: auto_updates_unattended_dry_run
+  changed_when: false
+  failed_when: false
+  when: auto_updates_apt_enable | bool
+
+- name: Avisar quando a simulacao do unattended-upgrades falhar
+  debug:
+    msg: >-
+      'unattended-upgrade --dry-run' retornou
+      {{ auto_updates_unattended_dry_run.rc }}. Normalmente e lock do apt ou
+      rede. Verifique depois com
+      'sudo unattended-upgrade --dry-run --debug'.
+  when:
+    - auto_updates_apt_enable | bool
+    - auto_updates_unattended_dry_run.rc | default(0) != 0
+
+# Camada 2: re-execucao agendada do playbook.
+- name: Avisar quando o self-update nao tiver perfil definido
+  debug:
+    msg: >-
+      auto_updates_selfupdate_profile esta vazio: a execucao automatica vai
+      rodar sem perfil e falhar se git_user_name/git_user_email ainda forem os
+      placeholders de group_vars/all.yml. Defina o perfil usado no bootstrap.
+  when:
+    - auto_updates_selfupdate_enable | bool
+    - (auto_updates_selfupdate_profile | trim | length) == 0
+
+- name: Instalar script de self-update
+  template:
+    src: workstation-selfupdate.sh.j2
+    dest: "{{ auto_updates_selfupdate_script }}"
+    owner: root
+    group: root
+    mode: "0750"
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Instalar rotacao do log de self-update
+  copy:
+    dest: /etc/logrotate.d/workstation-selfupdate
+    mode: "0644"
+    content: |
+      {{ auto_updates_selfupdate_log }} {
+          weekly
+          rotate {{ auto_updates_selfupdate_log_rotate_count }}
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 0640 root adm
+      }
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Instalar service systemd de self-update
+  template:
+    src: workstation-selfupdate.service.j2
+    dest: /etc/systemd/system/workstation-selfupdate.service
+    mode: "0644"
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Instalar timer systemd de self-update
+  template:
+    src: workstation-selfupdate.timer.j2
+    dest: /etc/systemd/system/workstation-selfupdate.timer
+    mode: "0644"
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Recarregar systemd para o timer de self-update
+  systemd:
+    daemon_reload: yes
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Habilitar e iniciar timer de self-update
+  systemd:
+    name: workstation-selfupdate.timer
+    enabled: yes
+    state: started
+  when: auto_updates_selfupdate_enable | bool
+
+- name: Desativar self-update quando desligado
+  when: not (auto_updates_selfupdate_enable | bool)
+  block:
+    - name: Parar e desabilitar timer de self-update
+      systemd:
+        name: workstation-selfupdate.timer
+        enabled: no
+        state: stopped
+      failed_when: false
+
+    - name: Remover artefatos de self-update
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/workstation-selfupdate.timer
+        - /etc/systemd/system/workstation-selfupdate.service
+        - /etc/logrotate.d/workstation-selfupdate
+        - "{{ auto_updates_selfupdate_script }}"
+
+    - name: Recarregar systemd apos remover o self-update
+      systemd:
+        daemon_reload: yes

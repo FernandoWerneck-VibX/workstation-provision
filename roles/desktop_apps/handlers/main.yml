@@ -1,0 +1,6 @@
+---
+- name: Atualizar cache de aplicacoes do usuario
+  become_user: "{{ dev_user }}"
+  command: update-desktop-database {{ dev_home }}/.local/share/applications
+  changed_when: false
+  failed_when: false

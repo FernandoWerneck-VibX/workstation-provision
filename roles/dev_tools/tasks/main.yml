@@ -5,10 +5,29 @@
   args:
     creates: "{{ dev_home }}/.sdkman/bin/sdkman-init.sh"
 
-- name: Instalar Java/Maven/Gradle
+# Sem auto_answer o SDKMAN abre prompt ao trocar a versao default, o que
+# travaria qualquer execucao nao interativa (timer de self-update).
+- name: Habilitar respostas automaticas e selfupdate do SDKMAN
+  become_user: "{{ dev_user }}"
+  lineinfile:
+    path: "{{ dev_home }}/.sdkman/etc/config"
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+  loop:
+    - {key: "sdkman_auto_answer", value: "true"}
+    - {key: "sdkman_selfupdate_feature", value: "true"}
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Instalar/atualizar Java, Maven e Gradle
   become_user: "{{ dev_user }}"
   shell: |
     source "{{ dev_home }}/.sdkman/bin/sdkman-init.sh"
+    sdk selfupdate force || true
+    sdk update || true
+    # Java fica pinado em java_version de proposito (troca de major e decisao,
+    # nao atualizacao). Maven e Gradle acompanham o latest: sem versao, o
+    # SDKMAN instala a atual e ja a define como default.
     sdk install java {{ java_version }}
     sdk default java {{ java_version }}
     sdk install maven
@@ -93,6 +112,16 @@
     UV_INSTALL_DIR: "{{ dev_home }}/.local/bin"
     UV_NO_MODIFY_PATH: "1"
   when: not uv_bin.stat.exists
+
+# Sem isto o uv fica congelado na versao instalada no primeiro provisionamento,
+# porque a task acima so roda quando o binario nao existe. Falha aqui nao e
+# fatal: o uv atual continua funcionando.
+- name: Atualizar uv para a versao mais recente
+  become_user: "{{ dev_user }}"
+  command: "{{ dev_home }}/.local/bin/uv self update"
+  register: uv_self_update
+  failed_when: false
+  changed_when: "'Upgraded uv' in (uv_self_update.stdout | default('') ~ uv_self_update.stderr | default(''))"
 
 - name: Remover instalacao legada do Pyenv
   file:

@@ -1,0 +1,132 @@
+---
+# Instala o Kazam2 do git num venv proprio. Ver o bloco de comentarios em
+# defaults/main.yml para o porque de nao ser Flatpak nem apt.
+- name: Instalar dependencias de sistema do Kazam2
+  apt:
+    name: "{{ desktop_apps_kazam2_apt_packages }}"
+    state: present
+
+- name: Consultar commit mais recente do Kazam2
+  uri:
+    url: "https://api.github.com/repos/{{ desktop_apps_kazam2_api_repo }}/commits/{{ desktop_apps_kazam2_branch }}"
+    return_content: yes
+    headers:
+      User-Agent: ansible
+  register: desktop_apps_kazam2_commit
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se nao conseguir consultar o commit do Kazam2
+  fail:
+    msg: >-
+      Falha ao consultar o commit de {{ desktop_apps_kazam2_branch }} em
+      {{ desktop_apps_kazam2_api_repo }}. Verifique rede/proxy ou desative com
+      desktop_apps_kazam2_enable: false.
+  when:
+    - desktop_apps_kazam2_commit.status is not defined or desktop_apps_kazam2_commit.status != 200
+
+- name: Definir commit desejado do Kazam2
+  set_fact:
+    desktop_apps_kazam2_desired_commit: "{{ desktop_apps_kazam2_commit.json.sha }}"
+
+- name: Verificar stamp de versao do Kazam2
+  stat:
+    path: "{{ desktop_apps_kazam2_venv }}/.installed-commit"
+  register: desktop_apps_kazam2_stamp
+
+- name: Verificar entrypoint do Kazam2
+  stat:
+    path: "{{ desktop_apps_kazam2_venv }}/bin/kazam"
+  register: desktop_apps_kazam2_entrypoint
+
+- name: Ler commit instalado do Kazam2
+  slurp:
+    src: "{{ desktop_apps_kazam2_venv }}/.installed-commit"
+  register: desktop_apps_kazam2_installed_raw
+  when: desktop_apps_kazam2_stamp.stat.exists
+
+- name: Definir necessidade de instalar o Kazam2
+  set_fact:
+    desktop_apps_kazam2_installed_commit: >-
+      {{
+        (desktop_apps_kazam2_installed_raw.content | b64decode | trim)
+        if desktop_apps_kazam2_stamp.stat.exists
+        else ''
+      }}
+
+- name: Definir se o Kazam2 precisa ser (re)instalado
+  set_fact:
+    desktop_apps_kazam2_needs_install: >-
+      {{
+        (not desktop_apps_kazam2_entrypoint.stat.exists)
+        or (desktop_apps_kazam2_installed_commit != desktop_apps_kazam2_desired_commit)
+      }}
+
+# --system-site-packages e obrigatorio em dois momentos: em runtime, para o
+# 'gi' e o pycairo virem do apt; e em build, para o --no-build-isolation
+# encontrar o DistUtilsExtra do sistema.
+- name: Criar venv do Kazam2 com acesso aos pacotes do sistema
+  command: python3 -m venv --system-site-packages {{ desktop_apps_kazam2_venv }}
+  args:
+    creates: "{{ desktop_apps_kazam2_venv }}/bin/python"
+
+# --no-deps: o requires_dist do projeto lista hiq-python, cmake e
+# distutils-extra-python, mas nada disso e importado pelo codigo (hiq aparece
+# apenas no README) - e as libs reais ja vem do apt.
+# --no-build-isolation: o setup.py importa DistUtilsExtra, que esta no sistema.
+- name: Instalar Kazam2 do git no commit resolvido
+  command: >-
+    {{ desktop_apps_kazam2_venv }}/bin/pip install --upgrade --no-deps --no-build-isolation
+    git+{{ desktop_apps_kazam2_repo }}@{{ desktop_apps_kazam2_desired_commit }}
+  when: desktop_apps_kazam2_needs_install | bool
+
+- name: Registrar commit instalado do Kazam2
+  copy:
+    dest: "{{ desktop_apps_kazam2_venv }}/.installed-commit"
+    content: "{{ desktop_apps_kazam2_desired_commit }}\n"
+    mode: "0644"
+  when: desktop_apps_kazam2_needs_install | bool
+
+- name: Instalar icone do Kazam2
+  get_url:
+    url: "https://raw.githubusercontent.com/{{ desktop_apps_kazam2_api_repo }}/{{ desktop_apps_kazam2_desired_commit }}/kazam.png"
+    dest: "{{ desktop_apps_kazam2_icon }}"
+    mode: "0644"
+
+# Wrapper, nao symlink: o bin/kazam deriva o datadir de
+# os.path.abspath(__file__).split('bin/')[0]. Chamado via symlink em
+# /usr/local/bin/kazam, ele procuraria os .ui em /usr/local/share/kazam e nao
+# acharia nada. O 'exec' do caminho real preserva a resolucao.
+- name: Instalar wrapper do Kazam2 no PATH
+  copy:
+    dest: "{{ desktop_apps_kazam2_wrapper }}"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      exec {{ desktop_apps_kazam2_venv }}/bin/kazam "$@"
+
+- name: Instalar launcher do Kazam2
+  template:
+    src: kazam2.desktop.j2
+    dest: "{{ desktop_apps_kazam2_desktop_entry }}"
+    mode: "0644"
+
+- name: Verificar artefatos do Kazam2
+  stat:
+    path: "{{ item }}"
+  register: desktop_apps_kazam2_artifacts
+  loop:
+    - "{{ desktop_apps_kazam2_venv }}/bin/kazam"
+    - "{{ desktop_apps_kazam2_venv }}/share/kazam/ui"
+    - "{{ desktop_apps_kazam2_venv }}/share/kazam/sounds"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Falhar se a instalacao do Kazam2 estiver incompleta
+  fail:
+    msg: >-
+      Kazam2 instalado sem os arquivos de dados esperados
+      ({{ desktop_apps_kazam2_artifacts.results | rejectattr('stat.exists') | map(attribute='item') | join(', ') }}).
+      O app nao abriria: o entrypoint resolve o datadir a partir do proprio
+      caminho, em {{ desktop_apps_kazam2_venv }}/share/kazam.
+  when: desktop_apps_kazam2_artifacts.results | rejectattr('stat.exists') | list | length > 0

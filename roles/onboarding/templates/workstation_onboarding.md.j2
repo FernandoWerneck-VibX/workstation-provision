@@ -20,14 +20,54 @@ Arquivo gerado automaticamente pelo Ansible em {{ ansible_date_time.iso8601 }}.
 - Google Drive (rclone): `{% if gdrive_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 - OpenClaw: `{% if openclaw_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
 - AI assistant context: `{% if ai_assistant_enable | default(true) | bool %}habilitado{% else %}desabilitado{% endif %}`
+- Atualizacao automatica: `{% if auto_updates_enable | default(true) | bool %}habilitada{% else %}desabilitada{% endif %}`
+
+## Atualizacao Automatica
+
+{% if auto_updates_enable | default(true) | bool %}
+Nada aqui exige rodar o bootstrap de novo nem clicar em "atualizar":
+
+- Flatpaks: `flatpak-update.timer` (diario e apos o boot)
+{% if auto_updates_apt_enable | default(true) | bool %}
+- apt, incluindo repos de terceiros: `unattended-upgrades` (diario, sem reboot automatico)
+{% endif %}
+{% if auto_updates_selfupdate_enable | default(true) | bool %}
+- resto (binarios, tarballs, npm/uv/SDKMAN): `workstation-selfupdate.timer`
+  reaplica este playbook em `{{ auto_updates_selfupdate_oncalendar | default('Sun 03:30') }}`,
+  com log em `{{ auto_updates_selfupdate_log | default('/var/log/workstation-selfupdate.log') }}`
+{% endif %}
+
+Status: `systemctl list-timers 'flatpak-update*' 'workstation-selfupdate*' 'apt-daily*'`
+
+Forcar agora: `sudo systemctl start workstation-selfupdate`
+
+Versoes pinadas de proposito (nao sobem sozinhas): Java `{{ java_version }}`,
+Python `{{ python_version }}`, Node `{{ node_version }}`.
+{% else %}
+Desabilitada (`auto_updates_enable: false`). As atualizacoes dependem de rodar o
+playbook manualmente.
+{% endif %}
 
 ## Apps Desktop Provisionados
 
 {% for app in (desktop_apps_resolved | default(desktop_apps_catalog)) %}
 - `{{ app.id }}`
 {% endfor %}
-- `kazam` (apt)
 - `mint-meta-codecs` (apt, Linux Mint)
+{% if desktop_apps_kazam2_enable | default(true) | bool %}
+- `kazam` (Kazam2, do git em `{{ desktop_apps_kazam2_venv | default('/opt/kazam2') }}`)
+{% endif %}
+{% if desktop_apps_telegram_enable | default(true) | bool %}
+
+### Instancias do Telegram Desktop
+
+Cada instancia tem sessao e contas proprias (3 contas por instancia no plano
+gratuito) e aparece com lancador proprio no menu:
+
+{% for instance in desktop_apps_telegram_instances | default([]) %}
+- `{{ instance.name }}` -> workdir `{{ instance.workdir }}`
+{% endfor %}
+{% endif %}
 
 ## Recursos de Infra e Dev
 

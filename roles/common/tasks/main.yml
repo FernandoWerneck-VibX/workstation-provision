@@ -79,7 +79,6 @@
       - fuse3
       - irqbalance
       - systemd-zram-generator
-      - kazam
 
 - name: Instalar gcalendar com fallback para uv
   when: common_install_gcalendar | bool
