@@ -1,0 +1,94 @@
+---
+- name: Descobrir versao do doctl
+  uri:
+    url: https://api.github.com/repos/digitalocean/doctl/releases/latest
+    return_content: yes
+    headers:
+      User-Agent: ansible
+  register: doctl_latest
+  failed_when: false
+  when: doctl_version == "latest"
+
+- name: Validar consulta do doctl
+  fail:
+    msg: "Falha ao consultar release do doctl no GitHub. Verifique rede/proxy ou defina doctl_version fixo."
+  when: doctl_version == "latest" and (doctl_latest.status is not defined or doctl_latest.status != 200)
+
+- name: Definir versao do doctl
+  set_fact:
+    doctl_resolved_version: "{{ (doctl_latest.json.tag_name if doctl_version == 'latest' else doctl_version) | regex_replace('^v', '') }}"
+
+- name: Verificar versao instalada do doctl
+  command: doctl version
+  register: doctl_installed
+  failed_when: false
+  changed_when: false
+
+- name: Extrair versao instalada do doctl
+  set_fact:
+    doctl_installed_version: >-
+      {{ (doctl_installed.stdout | regex_search('doctl version ([0-9.]+)', '\1')
+          | default([''], true)) | first }}
+
+- name: Criar diretoria temporaria do doctl
+  tempfile:
+    state: directory
+    suffix: doctl
+  register: doctl_tmp
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Baixar checksums do doctl
+  uri:
+    url: "https://github.com/digitalocean/doctl/releases/download/v{{ doctl_resolved_version }}/doctl-{{ doctl_resolved_version }}-checksums.sha256"
+    return_content: yes
+  register: doctl_checksums
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Definir checksum do doctl
+  set_fact:
+    doctl_filename: "doctl-{{ doctl_resolved_version }}-linux-{{ devops_arch }}.tar.gz"
+    doctl_checksum: >-
+      {{ (doctl_checksums.content.splitlines()
+          | select('search', 'doctl-' ~ doctl_resolved_version ~ '-linux-' ~ devops_arch ~ '.tar.gz')
+          | list | first).split()[0] }}
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Baixar tarball do doctl
+  get_url:
+    url: "https://github.com/digitalocean/doctl/releases/download/v{{ doctl_resolved_version }}/{{ doctl_filename }}"
+    dest: "{{ doctl_tmp.path }}/doctl.tar.gz"
+    mode: "0644"
+    checksum: "sha256:{{ doctl_checksum }}"
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Extrair doctl
+  unarchive:
+    src: "{{ doctl_tmp.path }}/doctl.tar.gz"
+    dest: "{{ doctl_tmp.path }}"
+    remote_src: yes
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Instalar doctl
+  copy:
+    src: "{{ doctl_tmp.path }}/doctl"
+    dest: /usr/local/bin/doctl
+    mode: "0755"
+    remote_src: yes
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Limpar temporarios do doctl
+  file:
+    path: "{{ doctl_tmp.path }}"
+    state: absent
+  when: doctl_installed_version != doctl_resolved_version
+
+- name: Validar doctl
+  command: doctl version
+  register: doctl_check
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se doctl nao validar
+  fail:
+    msg: "Falha ao validar doctl. Verifique acesso ao GitHub, rede/proxy ou fixe doctl_version."
+  when: doctl_check.rc != 0

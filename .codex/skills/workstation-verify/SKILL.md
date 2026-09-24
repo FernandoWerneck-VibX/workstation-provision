@@ -36,6 +36,7 @@ kubectl version --client
 helm version
 kind version
 k9s version
+doctl version
 flutter doctor -v
 ```
 

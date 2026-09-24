@@ -434,6 +434,9 @@
     checksum: "sha256:{{ kind_checksum.content.split()[0] }}"
   when: kind_installed_version != kind_resolved_version
 
+- name: Instalar doctl (DigitalOcean CLI)
+  include_tasks: doctl.yml
+
 - name: Descobrir versao do AWS CLI
   uri:
     url: https://api.github.com/repos/aws/aws-cli/tags?per_page=1

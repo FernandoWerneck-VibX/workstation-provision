@@ -10,6 +10,7 @@ k8s_version="$(kubectl version --client -o yaml 2>/dev/null | awk '/gitVersion:/
 helm_version="$(helm version --short 2>/dev/null || echo "N/A")"
 k9s_version="$(k9s version --short 2>/dev/null | head -n 1)"
 kind_version="$(kind version 2>/dev/null || echo "N/A")"
+doctl_version="$(doctl version 2>/dev/null | head -n 1)"
 flutter_version="$(flutter --version 2>/dev/null | head -n 1)"
 
 timer_state() {
@@ -42,6 +43,7 @@ echo "K8s: ${k8s_version:-N/A}"
 echo "Helm: ${helm_version:-N/A}"
 echo "K9s: ${k9s_version:-N/A}"
 echo "Kind: ${kind_version:-N/A}"
+echo "doctl: ${doctl_version:-N/A}"
 echo "Flutter: ${flutter_version:-N/A}"
 echo "Auto-update Flatpak: ${flatpak_timer}"
 echo "Auto-update apt (unattended-upgrades): ${apt_timer}"
