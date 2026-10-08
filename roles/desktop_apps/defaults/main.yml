@@ -91,6 +91,10 @@ desktop_apps_catalog:
       apt: "cheese"
   - id: "io.github.mfat.sshpilot"
   - id: "org.kde.audiotube"
+  # Sem fallback apt de proposito: o role cleanup_apps remove "libreoffice*" do
+  # apt (o pacote que vem no Mint), entao um fallback apt seria desinstalado no
+  # fim da mesma execucao.
+  - id: "org.libreoffice.LibreOffice"
 
 # Kazam2 (fork mantido do Kazam): gravador de tela X11-native.
 #

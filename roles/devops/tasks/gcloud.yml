@@ -1,0 +1,30 @@
+---
+- name: Baixar chave GPG do Google Cloud CLI
+  get_url:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    dest: /etc/apt/keyrings/cloud.google.asc
+    mode: "0644"
+
+- name: Adicionar repo Google Cloud CLI
+  apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/cloud.google.asc]
+      https://packages.cloud.google.com/apt cloud-sdk main
+    filename: google-cloud-sdk
+    update_cache: yes
+
+- name: Instalar Google Cloud CLI
+  apt:
+    name: "{{ [gcloud_cli_package] + gcloud_cli_extra_packages }}"
+    state: present
+
+- name: Validar Google Cloud CLI
+  command: gcloud --version
+  register: gcloud_check
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se Google Cloud CLI nao validar
+  fail:
+    msg: "Falha ao validar gcloud. Verifique acesso a packages.cloud.google.com, rede/proxy ou apt."
+  when: gcloud_check.rc != 0

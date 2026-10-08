@@ -5,6 +5,11 @@ k9s_version: "latest"
 kind_version: "latest"
 doctl_version: "latest"
 aws_cli_version: "latest"
+# Google Cloud CLI (gcloud) via repo apt oficial; atualizado pelo
+# unattended-upgrades. Adicione componentes extras (ex.: kubectl auth plugin)
+# em gcloud_cli_extra_packages.
+gcloud_cli_package: "google-cloud-cli"
+gcloud_cli_extra_packages: []
 aws_cli_install_dir: "/usr/local/aws-cli"
 aws_cli_bin_dir: "/usr/local/bin"
 docker_apt_release: ""

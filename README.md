@@ -59,6 +59,7 @@ programacao.
 - `kind`
 - `k9s`
 - `doctl` (DigitalOcean CLI)
+- `gcloud` (Google Cloud CLI)
 
 ### Apps desktop
 
@@ -77,6 +78,7 @@ Catalogo atual em [roles/desktop_apps/defaults/main.yml](/home/fernando/projects
 - Snapshot
 - SSH Pilot
 - Audiotube
+- LibreOffice
 - Kazam2 (gravacao de tela, instalado do git em `/opt/kazam2`)
 - Celluloid
 - gThumb
@@ -122,8 +124,8 @@ sem interacao:
 
 | Camada | Cobre | Mecanismo | Frequencia |
 | --- | --- | --- | --- |
-| Flatpak | apps desktop (Chrome, Firefox, Telegram, Ferdium, Discord, Spotify, Postman, Sublime...) | `flatpak-update.timer` | diaria + 3min apos o boot |
-| apt | pacotes do sistema e repos de terceiros (VS Code, Docker, GitHub CLI, Syncthing, rclone, pay-respects...) | `unattended-upgrades` + `apt-daily-upgrade.timer` | diaria |
+| Flatpak | apps desktop (Chrome, Firefox, Telegram, Ferdium, Discord, Spotify, Postman, Sublime, LibreOffice...) | `flatpak-update.timer` | diaria + 3min apos o boot |
+| apt | pacotes do sistema e repos de terceiros (VS Code, Docker, GitHub CLI, Google Cloud CLI, Syncthing, rclone, pay-respects...) | `unattended-upgrades` + `apt-daily-upgrade.timer` | diaria |
 | playbook | o resto: binarios em `/usr/local/bin` (kubectl, helm, k9s, kind, doctl, atuin), tarballs em `/opt` (IntelliJ, Flutter), AWS CLI, NVM/npm globais, uv e suas ferramentas, ble.sh, bash-git-prompt, chezmoi, Maven/Gradle | `workstation-selfupdate.timer` | semanal (`Sun 03:30`) |
 
 A terceira camada e o `roles/auto_updates`: como todas as roles resolvem

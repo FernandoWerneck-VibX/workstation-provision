@@ -37,6 +37,7 @@ helm version
 kind version
 k9s version
 doctl version
+gcloud --version
 flutter doctor -v
 ```
 
