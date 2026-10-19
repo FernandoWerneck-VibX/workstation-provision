@@ -1,0 +1,30 @@
+---
+- name: Baixar chave GPG da HashiCorp
+  get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /etc/apt/keyrings/hashicorp.asc
+    mode: "0644"
+
+- name: Adicionar repo HashiCorp
+  apt_repository:
+    repo: >-
+      deb [arch={{ devops_arch }} signed-by=/etc/apt/keyrings/hashicorp.asc]
+      https://apt.releases.hashicorp.com {{ terraform_apt_release | default(docker_repo_release, true) }} main
+    filename: hashicorp
+    update_cache: yes
+
+- name: Instalar Terraform
+  apt:
+    name: terraform
+    state: present
+
+- name: Validar Terraform
+  command: terraform version
+  register: terraform_check
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se Terraform nao validar
+  fail:
+    msg: "Falha ao validar Terraform. Verifique acesso a apt.releases.hashicorp.com, rede/proxy ou apt."
+  when: terraform_check.rc != 0

@@ -38,6 +38,8 @@ kind version
 k9s version
 doctl version
 gcloud --version
+ngrok version
+terraform version
 flutter doctor -v
 ```
 

@@ -1,0 +1,30 @@
+---
+- name: Baixar chave GPG do ngrok
+  get_url:
+    url: https://ngrok-agent.s3.amazonaws.com/ngrok.asc
+    dest: /etc/apt/keyrings/ngrok.asc
+    mode: "0644"
+
+- name: Adicionar repo ngrok
+  apt_repository:
+    repo: >-
+      deb [arch={{ devops_arch }} signed-by=/etc/apt/keyrings/ngrok.asc]
+      https://ngrok-agent.s3.amazonaws.com {{ ngrok_apt_release }} main
+    filename: ngrok
+    update_cache: yes
+
+- name: Instalar ngrok
+  apt:
+    name: ngrok
+    state: present
+
+- name: Validar ngrok
+  command: ngrok version
+  register: ngrok_check
+  changed_when: false
+  failed_when: false
+
+- name: Falhar se ngrok nao validar
+  fail:
+    msg: "Falha ao validar ngrok. Verifique acesso a ngrok-agent.s3.amazonaws.com, rede/proxy ou apt."
+  when: ngrok_check.rc != 0
